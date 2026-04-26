@@ -83,14 +83,14 @@
   /* Scrolls with the list naturally; JS only fades opacity, no transform chasing */
   #heroBlock {
     position: relative;
-    height: 250px;
+    height: 314px; /* 250 + 32 top padding + 32 bottom padding */
     flex-shrink: 0;
     will-change: opacity;
   }
   #heroRing {
     position: absolute;
     left: 50%;
-    top: 25px;
+    top: 57px; /* 25 + 32 */
     transform: translateX(-50%);
     pointer-events: none;
     will-change: transform;
@@ -98,7 +98,7 @@
   #heroCount {
     position: absolute;
     left: 50%;
-    top: 81px;
+    top: 113px; /* 81 + 32 */
     transform: translateX(-50%);
     font-family: 'Satoshi', sans-serif;
     font-weight: 700;
@@ -111,7 +111,7 @@
   #heroParts {
     position: absolute;
     left: 50%;
-    top: 166px;
+    top: 198px; /* 166 + 32 */
     transform: translateX(-50%);
     font-family: 'Satoshi', sans-serif;
     font-weight: 600;
@@ -1451,7 +1451,7 @@
   // ── Scroll-driven header collapse ────────────────────────────────
   // SCROLL_THRESHOLD = heroBlock height. At this scrollTop the tabs are
   // exactly flush with the app-bar bottom — nothing needs to be calculated.
-  const SCROLL_THRESHOLD = 250;
+  const SCROLL_THRESHOLD = 314; /* heroBlock height: 250 + 32 top + 32 bottom */
 
   const scrollContainer = document.getElementById('scrollContainer');
   const heroBlock   = document.getElementById('heroBlock');
