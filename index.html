@@ -266,6 +266,8 @@ html, body {
   -webkit-overflow-scrolling:touch;
   padding-left:155px; padding-right:155px;
   z-index:1;
+  scroll-snap-type: x mandatory;
+  -webkit-scroll-snap-type: x mandatory;
 }
 #dpTrack::-webkit-scrollbar { display:none; }
 
@@ -275,8 +277,8 @@ html, body {
   align-items:center; justify-content:center;
   gap:6px; cursor:pointer;
   -webkit-tap-highlight-color:transparent;
+  scroll-snap-align: center;
 }
-.date-cell.future { opacity:.35; pointer-events:none; }
 .date-day-num {
   font-family:'Satoshi',sans-serif; font-weight:700;
   font-size:18px; line-height:22px; color:#222;
@@ -650,8 +652,8 @@ myWorkOverlay.addEventListener('touchend', () => {
 // DATE PICKER
 // ─────────────────────────────────────────────────────────────
 const PAST_DAYS   = 30;
-const FUTURE_DAYS = 3;    // show 3 future dates so 2 are visible to the right
-const TOTAL_CELLS = PAST_DAYS + 1 + FUTURE_DAYS;   // 34 cells; idx 30 = today
+const FUTURE_DAYS = 0;    // no future dates — today is the rightmost scrollable cell
+const TOTAL_CELLS = PAST_DAYS + 1;   // 31 cells; idx 30 = today
 const CELL_W      = 80;
 const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAILY_STATS = {
@@ -680,16 +682,14 @@ function updateStats(daysAgo) {
     const d = new Date(today);
     d.setDate(today.getDate() + daysOffset);
     const cell = document.createElement('div');
-    cell.className = 'date-cell' + (daysOffset > 0 ? ' future' : '');
+    cell.className = 'date-cell';
     cell.innerHTML =
       `<span class="date-day-num">${d.getDate()}</span>` +
       `<span class="date-day-name">${DAY_NAMES[d.getDay()]}</span>`;
-    if (daysOffset <= 0) {
-      cell.addEventListener('click', () => {
-        dpTrack.scrollTo({ left: i * CELL_W, behavior:'smooth' });
-        updateStats(-daysOffset);   // daysOffset is negative for past
-      });
-    }
+    cell.addEventListener('click', () => {
+      dpTrack.scrollTo({ left: i * CELL_W, behavior:'smooth' });
+      updateStats(-daysOffset);
+    });
     dpTrack.appendChild(cell);
   }
 
@@ -716,31 +716,29 @@ function updateStats(daysAgo) {
       osc.stop(ctx.currentTime + 0.04);
     } catch (_) {}
   }
-  function haptic() {
-    if (navigator.vibrate) navigator.vibrate(15);
-  }
-
-  // Snap + per-cell click feedback + stats update
-  let snapTimer, lastCenteredIdx = PAST_DAYS;
+  // Per-cell feedback — tick sound on scroll, vibration on touchmove
+  let lastCenteredIdx = PAST_DAYS;
 
   dpTrack.addEventListener('scroll', () => {
-    // Fire tick on each cell change while scrolling
-    const raw  = Math.round(dpTrack.scrollLeft / CELL_W);
-    const idx  = Math.max(0, Math.min(PAST_DAYS, raw));
+    const raw = Math.round(dpTrack.scrollLeft / CELL_W);
+    const idx = Math.max(0, Math.min(PAST_DAYS, raw));
     if (idx !== lastCenteredIdx) {
       lastCenteredIdx = idx;
       playTick();
-      haptic();
       updateStats(PAST_DAYS - idx);
     }
-    // Snap after scroll settles
-    clearTimeout(snapTimer);
-    snapTimer = setTimeout(() => {
-      const r2  = Math.round(dpTrack.scrollLeft / CELL_W);
-      const i2  = Math.max(0, Math.min(PAST_DAYS, r2));
-      dpTrack.scrollTo({ left: i2 * CELL_W, behavior:'smooth' });
-    }, 120);
   });
+
+  // Vibration on touchmove — touchmove is always a user activation in Android Chrome
+  let lastVibIdx = PAST_DAYS;
+  dpTrack.addEventListener('touchmove', () => {
+    const raw = Math.round(dpTrack.scrollLeft / CELL_W);
+    const idx = Math.max(0, Math.min(PAST_DAYS, raw));
+    if (idx !== lastVibIdx) {
+      lastVibIdx = idx;
+      if (navigator.vibrate) navigator.vibrate(25);
+    }
+  }, { passive: true });
 })();
 
 // Centre today whenever My Work opens
