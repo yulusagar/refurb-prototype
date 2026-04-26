@@ -771,6 +771,9 @@ function updateStats(daysAgo) {
   }
 
   dpTrack.addEventListener('touchstart', () => {
+    // Eagerly unlock AudioContext so first tick plays immediately (mobile requirement)
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
     if (navigator.vibrate) navigator.vibrate(10);   // prime vibration engine
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(vibPoll);

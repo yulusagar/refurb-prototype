@@ -455,11 +455,40 @@
   .user-count {
     font-family: 'Satoshi', sans-serif;
     font-weight: 700;
-    font-size: 24px;
-    line-height: 28px;
+    font-size: 20px;
+    line-height: 24px;
     color: #222;
     white-space: nowrap;
     flex-shrink: 0;
+  }
+
+  /* ── Column header (user tab) ── */
+  .col-header {
+    display: flex;
+    align-items: center;
+    background: #f7f7f7;
+    padding: 0 24px 0 110px;
+    height: 34px;
+    border-bottom: .5px solid #e8e8e8;
+  }
+  .col-header-label {
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    color: #aaa;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .col-header-label:first-child { flex: 1; }
+
+  /* ── Tab shake (while list is scrolling in sticky mode) ── */
+  @keyframes tabShake {
+    0%, 100% { transform: translateY(0); }
+    25%       { transform: translateY(-1px); }
+    75%       { transform: translateY(1px); }
+  }
+  .tabs-bar.shaking {
+    animation: tabShake 120ms linear infinite;
   }
 
   /* ── Reset filter ── */
@@ -486,7 +515,7 @@
 <div class="phone" id="phone">
 
   <!-- Top App Bar -->
-  <div style="position:absolute;left:0;top:0;width:100%;height:72px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 4px;z-index:5;">
+  <div style="position:absolute;left:0;top:0;width:100%;height:72px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 4px;z-index:5;border-bottom:.5px solid #e8e8e8;">
     <div id="backBtn" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;">
       <img src="assets/back.svg" style="width:24px;height:24px;" alt="back">
     </div>
@@ -501,19 +530,27 @@
   <!-- Hero ring (decorative arc behind the count) -->
   <svg id="heroRing" width="200" height="200" viewBox="0 0 200 200"
     style="position:absolute;left:50%;top:97px;transform:translateX(-50%);pointer-events:none;z-index:1;will-change:opacity;">
-    <circle cx="100" cy="100" r="88" fill="none" stroke="#f0f0f0" stroke-width="7"/>
+    <defs>
+      <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="2.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <!-- Dotted track ring -->
+    <circle cx="100" cy="100" r="88" fill="none" stroke="#e4e4e4" stroke-width="4"
+      stroke-dasharray="2 7" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+    <!-- Fill arc with subtle glow -->
     <circle id="ringFill" cx="100" cy="100" r="88"
-      fill="none" stroke="#3D4CD4" stroke-width="7" stroke-linecap="round"
+      fill="none" stroke="#5C6BE0" stroke-width="4" stroke-linecap="round"
       transform="rotate(-90 100 100)"
       stroke-dasharray="552.9 552.9"
+      filter="url(#ringGlow)"
       style="transition:stroke-dasharray 0.35s cubic-bezier(0.4,0,0.2,1);"/>
   </svg>
   <!-- Hero count -->
   <p id="heroCount" style="position:absolute;left:50%;top:153px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:700;font-size:72px;line-height:88px;color:#222;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">995</p>
   <!-- Subtitle -->
-  <p id="heroParts" style="position:absolute;left:50%;top:245px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:500;font-size:14px;line-height:20px;color:#717171;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">QC ready parts</p>
-  <!-- Context line -->
-  <p id="heroContext" style="position:absolute;left:50%;top:269px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#aaa;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">Across 15 people · 10 types</p>
+  <p id="heroParts" style="position:absolute;left:50%;top:238px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:600;font-size:14px;line-height:20px;color:#444;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">QC ready parts</p>
 
   <!-- Single scroll container: hero spacer + sticky tabs + tab content -->
   <div id="scrollContainer">
@@ -521,7 +558,7 @@
 
     <!-- Sticky tabs bar -->
     <div class="tabs-bar">
-      <div class="tab active" data-tab="user"><span class="tab-label" id="lblUser">User</span></div>
+      <div class="tab active" data-tab="user"><span class="tab-label" id="lblUser">Technicians</span></div>
       <div class="tab" data-tab="type"><span class="tab-label" id="lblType">Type</span></div>
       <div class="tab" data-tab="state"><span class="tab-label" id="lblState">State</span></div>
     </div>
@@ -542,6 +579,11 @@
           </svg>
         </button>
       </div>
+    </div>
+    <!-- Column header -->
+    <div class="col-header">
+      <span class="col-header-label">RT name</span>
+      <span class="col-header-label">QC ready parts</span>
     </div>
     <div id="userNoResults" class="search-no-results">No users found</div>
     <!-- user rows injected by JS -->
@@ -1035,14 +1077,6 @@
     ringFillEl.style.strokeDasharray = `${filled} ${CIRC.toFixed(1)}`;
   }
 
-  // ── Hero context line ─────────────────────────────────────────────
-  function updateHeroContext() {
-    const activeUsers = USERS.filter(u => userRowCount(u.name) > 0).length;
-    const activeTypes = TYPES.filter(t => Math.round(typeRowCount(t)) > 0).length;
-    document.getElementById('heroContext').textContent =
-      `Across ${activeUsers} ${activeUsers === 1 ? 'person' : 'people'} · ${activeTypes} ${activeTypes === 1 ? 'type' : 'types'}`;
-  }
-
   // ── Update all UI ─────────────────────────────────────────────────
   function updateUI() {
     // ── 1. Type rows ──────────────────────────────────────────────
@@ -1107,14 +1141,13 @@
       row.classList.toggle('selected', sel.user.has(u.name));
     });
 
-    // ── 5. Hero count + ring + context ───────────────────────────
+    // ── 5. Hero count + ring ──────────────────────────────────────
     const heroVal = computeCount([...sel.status], [...sel.type], [...sel.state]);
     setHeroCount(heroVal);
     setRingFill(heroVal);
-    updateHeroContext();
 
     // ── 6. Tab badge labels ───────────────────────────────────────
-    const BASE = { type: 'Type', user: 'User', state: 'State' };
+    const BASE = { type: 'Type', user: 'Technicians', state: 'State' };
     ['type', 'user', 'state'].forEach(tab => {
       const n  = tab === 'type' ? getCountTypes().length : sel[tab].size;
       const id = 'lbl' + tab.charAt(0).toUpperCase() + tab.slice(1);
@@ -1368,8 +1401,6 @@
     document.getElementById('heroCount').style.transform = `translateX(-50%) translateY(${-p * 56}px)`;
     document.getElementById('heroParts').style.opacity = 1 - p;
     document.getElementById('heroParts').style.transform = `translateX(-50%) translateY(${-p * 36}px)`;
-    document.getElementById('heroContext').style.opacity = 1 - p;
-    document.getElementById('heroContext').style.transform = `translateX(-50%) translateY(${-p * 24}px)`;
 
     // Header title fades in (starts at 50% progress so it appears near the end)
     const titleP = Math.min(Math.max((p - 0.5) / 0.5, 0), 1);
@@ -1460,8 +1491,19 @@
     }, { passive: true });
   }
 
+  // ── Scroll progress (hero collapse) + tab shake ──────────────────
+  const tabsBar = document.querySelector('.tabs-bar');
+  let shakeTimer = null;
+
   scrollContainer.addEventListener('scroll', function() {
     applyScrollProgress(this.scrollTop);
+
+    // Shake tabs only while content list is scrolling (hero fully collapsed)
+    if (this.scrollTop >= SCROLL_THRESHOLD) {
+      if (!tabsBar.classList.contains('shaking')) tabsBar.classList.add('shaking');
+      clearTimeout(shakeTimer);
+      shakeTimer = setTimeout(() => tabsBar.classList.remove('shaking'), 120);
+    }
   }, { passive: true });
 
   // ── Tab switching ─────────────────────────────────────────────────
