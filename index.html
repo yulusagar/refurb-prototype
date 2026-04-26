@@ -278,12 +278,14 @@ html, body {
   gap:6px; cursor:pointer;
   -webkit-tap-highlight-color:transparent;
   scroll-snap-align: center;
+  scroll-snap-stop: always;   /* one cell per swipe — clicky wheel feel */
 }
 /* Future dates: visible but dimmed, no snap point so slider bounces back to today */
 .date-cell.future {
   opacity:.35;
   pointer-events:none;
   scroll-snap-align: none;
+  scroll-snap-stop: normal;
 }
 .date-day-num {
   font-family:'Satoshi',sans-serif; font-weight:700;
@@ -712,7 +714,7 @@ function updateStats(daysAgo) {
     dpTrack.appendChild(cell);
   }
 
-  // ── Tick sound (iOS alarm-style short click) ──────────────
+  // ── Tick sound ────────────────────────────────────────────
   let audioCtx;
   function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -720,54 +722,57 @@ function updateStats(daysAgo) {
   }
   function playTick() {
     try {
-      const ctx  = getAudioCtx();
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      // Short high-pitched click, quick decay
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1200, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.04);
-      gain.gain.setValueAtTime(0.18, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.04);
+      const ctx = getAudioCtx();
+      const fire = () => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.04);
+      };
+      // Resume if browser auto-suspended the context (common on mobile after inactivity)
+      if (ctx.state === 'suspended') { ctx.resume().then(fire); } else { fire(); }
     } catch (_) {}
   }
-  // RAF-based per-cell feedback — polls scrollLeft at 60fps while finger is down.
-  // Catches every cell change regardless of scroll speed (slow drag or fast fling).
-  let lastCenteredIdx = PAST_DAYS;
-  let rafId = null;
 
+  // ── Sound on scroll (fires during drag AND during CSS snap animation) ──
+  let lastSoundIdx = PAST_DAYS;
+  dpTrack.addEventListener('scroll', () => {
+    const raw = Math.round(dpTrack.scrollLeft / CELL_W);
+    const idx = Math.max(0, Math.min(PAST_DAYS, raw));
+    if (idx !== lastSoundIdx) {
+      lastSoundIdx = idx;
+      playTick();
+      updateStats(PAST_DAYS - idx);
+    }
+  });
+
+  // ── Vibration on RAF while finger is down ─────────────────
+  let lastVibIdx = PAST_DAYS;
+  let rafId = null;
   function vibPoll() {
     const raw = Math.round(dpTrack.scrollLeft / CELL_W);
     const idx = Math.max(0, Math.min(PAST_DAYS, raw));
-    if (idx !== lastCenteredIdx) {
-      lastCenteredIdx = idx;
-      // Fire sound and vibration in the same call for perfect sync
-      playTick();
+    if (idx !== lastVibIdx) {
+      lastVibIdx = idx;
       if (navigator.vibrate) navigator.vibrate(60);
-      updateStats(PAST_DAYS - idx);
     }
     rafId = requestAnimationFrame(vibPoll);
   }
 
   dpTrack.addEventListener('touchstart', () => {
-    // Prime vibration engine on first touch (guaranteed user activation)
-    if (navigator.vibrate) navigator.vibrate(10);
+    if (navigator.vibrate) navigator.vibrate(10);   // prime vibration engine
     if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(vibPoll);  // start 60fps poll
+    rafId = requestAnimationFrame(vibPoll);
   }, { passive: true });
-
-  dpTrack.addEventListener('touchend', () => {
-    cancelAnimationFrame(rafId);
-    rafId = null;
-  }, { passive: true });
-  dpTrack.addEventListener('touchcancel', () => {
-    cancelAnimationFrame(rafId);
-    rafId = null;
-  }, { passive: true });
+  dpTrack.addEventListener('touchend',    () => { cancelAnimationFrame(rafId); rafId = null; }, { passive: true });
+  dpTrack.addEventListener('touchcancel', () => { cancelAnimationFrame(rafId); rafId = null; }, { passive: true });
 })();
 
 // Centre today whenever My Work opens
