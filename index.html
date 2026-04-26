@@ -450,13 +450,24 @@ let   phoneH  = 844;
 let   mwStartY;   // top of bar in phone coords = phoneH - NAV_H - BAR_H
 
 function scaleApp() {
-  const s = window.innerWidth / 390;
-  phoneH  = Math.round(window.innerHeight / s);
+  // visualViewport gives the true visible area on mobile (excludes browser chrome)
+  const vv = window.visualViewport;
+  const w  = vv ? vv.width  : window.innerWidth;
+  const h  = vv ? vv.height : window.innerHeight;
+  const s  = w / 390;
+  phoneH   = Math.round(h / s);
   mwStartY = phoneH - NAV_H - BAR_H;
   phone.style.transform = `scale(${s})`;
   phone.style.height    = phoneH + 'px';
 }
 scaleApp();
+// Re-measure every time the visible viewport changes (browser chrome show/hide, rotation, reopen)
+if (window.visualViewport) window.visualViewport.addEventListener('resize', scaleApp);
+window.addEventListener('resize', scaleApp);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') scaleApp();
+});
+window.addEventListener('pageshow', scaleApp);
 
 // ─────────────────────────────────────────────────────────────
 // TILE PRESS FEEDBACK
@@ -734,8 +745,9 @@ function updateStats(daysAgo) {
     const idx = Math.max(0, Math.min(PAST_DAYS, raw));
     if (idx !== lastCenteredIdx) {
       lastCenteredIdx = idx;
+      // Fire sound and vibration in the same call for perfect sync
       playTick();
-      if (navigator.vibrate) navigator.vibrate(40);
+      if (navigator.vibrate) navigator.vibrate([0, 60]);   // pattern form is sharper on Android
       updateStats(PAST_DAYS - idx);
     }
     rafId = requestAnimationFrame(vibPoll);
