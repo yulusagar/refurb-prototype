@@ -481,16 +481,6 @@
   }
   .col-header-label:first-child { flex: 1; }
 
-  /* ── Tab shake (while list is scrolling in sticky mode) ── */
-  @keyframes tabShake {
-    0%, 100% { transform: translateY(0); }
-    25%       { transform: translateY(-1px); }
-    75%       { transform: translateY(1px); }
-  }
-  .tabs-bar.shaking {
-    animation: tabShake 120ms linear infinite;
-  }
-
   /* ── Reset filter ── */
   #resetBtn {
     font-family: 'Satoshi', sans-serif;
@@ -1491,19 +1481,9 @@
     }, { passive: true });
   }
 
-  // ── Scroll progress (hero collapse) + tab shake ──────────────────
-  const tabsBar = document.querySelector('.tabs-bar');
-  let shakeTimer = null;
-
+  // ── Scroll progress (hero collapse) ──────────────────────────────
   scrollContainer.addEventListener('scroll', function() {
     applyScrollProgress(this.scrollTop);
-
-    // Shake tabs only while content list is scrolling (hero fully collapsed)
-    if (this.scrollTop >= SCROLL_THRESHOLD) {
-      if (!tabsBar.classList.contains('shaking')) tabsBar.classList.add('shaking');
-      clearTimeout(shakeTimer);
-      shakeTimer = setTimeout(() => tabsBar.classList.remove('shaking'), 120);
-    }
   }, { passive: true });
 
   // ── Tab switching ─────────────────────────────────────────────────
