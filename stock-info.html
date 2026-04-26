@@ -35,6 +35,37 @@
     /* slide-in handled in JS so scale + translate compose correctly */
   }
 
+  /* ── App bar ── */
+  #appBar {
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%; height: 72px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px 0 4px;
+    z-index: 5;
+    border-bottom: .5px solid #e8e8e8;
+  }
+  #backBtn {
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  #headerTitle {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
   /* ── Scroll container ── */
   #scrollContainer {
     position: absolute;
@@ -42,12 +73,50 @@
     width: 100%; bottom: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain; /* prevent scroll leaking to page */
+    overscroll-behavior: contain;
     touch-action: pan-y;
   }
-  #heroSpacer {
+
+  /* ── Hero block — lives in-flow inside the scroll container ── */
+  /* Scrolls with the list naturally; JS only fades opacity, no transform chasing */
+  #heroBlock {
+    position: relative;
     height: 250px;
     flex-shrink: 0;
+    will-change: opacity;
+  }
+  #heroRing {
+    position: absolute;
+    left: 50%;
+    top: 25px;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  #heroCount {
+    position: absolute;
+    left: 50%;
+    top: 81px;
+    transform: translateX(-50%);
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 700;
+    font-size: 72px;
+    line-height: 88px;
+    color: #222;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #heroParts {
+    position: absolute;
+    left: 50%;
+    top: 166px;
+    transform: translateX(-50%);
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #444;
+    white-space: nowrap;
+    pointer-events: none;
   }
 
   /* ── Tabs bar ── */
@@ -467,17 +536,14 @@
     display: flex;
     align-items: center;
     background: #f7f7f7;
-    padding: 0 24px 0 110px;
-    height: 34px;
+    padding: 10px 24px 10px 58px; /* left-align with avatar circle */
     border-bottom: .5px solid #e8e8e8;
   }
   .col-header-label {
     font-family: 'Satoshi', sans-serif;
     font-weight: 500;
-    font-size: 11px;
+    font-size: 14px;
     color: #aaa;
-    letter-spacing: .06em;
-    text-transform: uppercase;
   }
   .col-header-label:first-child { flex: 1; }
 
@@ -504,47 +570,42 @@
 <body>
 <div class="phone" id="phone">
 
-  <!-- Top App Bar -->
-  <div style="position:absolute;left:0;top:0;width:100%;height:72px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 4px;z-index:5;border-bottom:.5px solid #e8e8e8;">
-    <div id="backBtn" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;">
+  <!-- App bar -->
+  <div id="appBar">
+    <div id="backBtn">
       <img src="assets/back.svg" style="width:24px;height:24px;" alt="back">
     </div>
-    <!-- Collapsed header title -->
-    <div id="headerTitle" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0;pointer-events:none;white-space:nowrap;display:flex;align-items:baseline;gap:5px;">
+    <div id="headerTitle">
       <span id="headerCount" style="font-family:'Satoshi',sans-serif;font-weight:700;font-size:17px;line-height:24px;color:#222;">710</span>
       <span style="font-family:'Satoshi',sans-serif;font-weight:500;font-size:17px;line-height:24px;color:#222;">parts</span>
     </div>
     <span id="resetBtn" style="flex-shrink:0;">reset filter</span>
   </div>
 
-  <!-- Hero ring (decorative arc behind the count) -->
-  <svg id="heroRing" width="200" height="200" viewBox="0 0 200 200"
-    style="position:absolute;left:50%;top:97px;transform:translateX(-50%);pointer-events:none;z-index:1;will-change:opacity;">
-    <defs>
-      <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur stdDeviation="2.5" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-    <!-- Dotted track ring -->
-    <circle cx="100" cy="100" r="88" fill="none" stroke="#e4e4e4" stroke-width="4"
-      stroke-dasharray="2 7" stroke-linecap="round" transform="rotate(-90 100 100)"/>
-    <!-- Fill arc with subtle glow -->
-    <circle id="ringFill" cx="100" cy="100" r="88"
-      fill="none" stroke="#5C6BE0" stroke-width="4" stroke-linecap="round"
-      transform="rotate(-90 100 100)"
-      stroke-dasharray="552.9 552.9"
-      filter="url(#ringGlow)"
-      style="transition:stroke-dasharray 0.35s cubic-bezier(0.4,0,0.2,1);"/>
-  </svg>
-  <!-- Hero count -->
-  <p id="heroCount" style="position:absolute;left:50%;top:153px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:700;font-size:72px;line-height:88px;color:#222;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">995</p>
-  <!-- Subtitle -->
-  <p id="heroParts" style="position:absolute;left:50%;top:238px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:600;font-size:14px;line-height:20px;color:#444;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">QC ready parts</p>
-
-  <!-- Single scroll container: hero spacer + sticky tabs + tab content -->
+  <!-- Scroll container: hero + sticky tabs + tab content, all in one flow -->
   <div id="scrollContainer">
-    <div id="heroSpacer"></div>
+
+    <!-- Hero block — scrolls naturally; JS only fades opacity on this wrapper -->
+    <div id="heroBlock">
+      <svg id="heroRing" width="200" height="200" viewBox="0 0 200 200">
+        <defs>
+          <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#e4e4e4" stroke-width="4"
+          stroke-dasharray="2 7" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+        <circle id="ringFill" cx="100" cy="100" r="88"
+          fill="none" stroke="#5C6BE0" stroke-width="4" stroke-linecap="round"
+          transform="rotate(-90 100 100)"
+          stroke-dasharray="552.9 552.9"
+          filter="url(#ringGlow)"
+          style="transition:stroke-dasharray 0.35s cubic-bezier(0.4,0,0.2,1);"/>
+      </svg>
+      <p id="heroCount">995</p>
+      <p id="heroParts">QC ready parts</p>
+    </div>
 
     <!-- Sticky tabs bar -->
     <div class="tabs-bar">
@@ -572,8 +633,8 @@
     </div>
     <!-- Column header -->
     <div class="col-header">
-      <span class="col-header-label">RT name</span>
-      <span class="col-header-label">QC ready parts</span>
+      <span class="col-header-label">Rt name</span>
+      <span class="col-header-label">Qc ready parts</span>
     </div>
     <div id="userNoResults" class="search-no-results">No users found</div>
     <!-- user rows injected by JS -->
@@ -1380,24 +1441,33 @@
   });
 
   // ── Scroll-driven header collapse ────────────────────────────────
-  const SCROLL_THRESHOLD = 250; // full heroSpacer height — tabs touch header at this point
-
-  function applyScrollProgress(scrollTop) {
-    const p = Math.min(Math.max(scrollTop / SCROLL_THRESHOLD, 0), 1);
-
-    // Hero elements fade and lift into the header
-    document.getElementById('heroRing').style.opacity = 1 - p;
-    document.getElementById('heroCount').style.opacity = 1 - p;
-    document.getElementById('heroCount').style.transform = `translateX(-50%) translateY(${-p * 56}px)`;
-    document.getElementById('heroParts').style.opacity = 1 - p;
-    document.getElementById('heroParts').style.transform = `translateX(-50%) translateY(${-p * 36}px)`;
-
-    // Header title fades in (starts at 50% progress so it appears near the end)
-    const titleP = Math.min(Math.max((p - 0.5) / 0.5, 0), 1);
-    document.getElementById('headerTitle').style.opacity = titleP;
-  }
+  // SCROLL_THRESHOLD = heroBlock height. At this scrollTop the tabs are
+  // exactly flush with the app-bar bottom — nothing needs to be calculated.
+  const SCROLL_THRESHOLD = 250;
 
   const scrollContainer = document.getElementById('scrollContainer');
+  const heroBlock   = document.getElementById('heroBlock');
+  const headerTitle = document.getElementById('headerTitle');
+
+  // Animates only TWO opacity values (GPU-composited, no layout).
+  // heroBlock scrolls naturally with the container — no transform chasing needed.
+  function applyScrollProgress(st) {
+    const p      = Math.min(Math.max(st / SCROLL_THRESHOLD, 0), 1);
+    const titleP = Math.min(Math.max((p - 0.5) / 0.5, 0), 1);
+    heroBlock.style.opacity   = 1 - p;
+    headerTitle.style.opacity = titleP;
+  }
+
+  // RAF gate: one style update per animation frame, no matter how fast scroll fires.
+  let _latestSt = 0, _scrollRaf = null;
+  function onScroll() {
+    _latestSt = scrollContainer.scrollTop;
+    if (_scrollRaf) return;
+    _scrollRaf = requestAnimationFrame(() => {
+      applyScrollProgress(_latestSt);
+      _scrollRaf = null;
+    });
+  }
 
   function updateTabContentSpacers() {
     const panels = [...document.querySelectorAll('.tab-content')];
@@ -1481,10 +1551,8 @@
     }, { passive: true });
   }
 
-  // ── Scroll progress (hero collapse) ──────────────────────────────
-  scrollContainer.addEventListener('scroll', function() {
-    applyScrollProgress(this.scrollTop);
-  }, { passive: true });
+  // ── Scroll progress (RAF-gated, hero collapse) ───────────────────
+  scrollContainer.addEventListener('scroll', onScroll, { passive: true });
 
   // ── Tab switching ─────────────────────────────────────────────────
   const TAB_ORDER = ['user', 'type', 'state'];
