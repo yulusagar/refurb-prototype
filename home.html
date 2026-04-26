@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quality Technician Home</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<link rel="prefetch" href="stock-info.html">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #888;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Satoshi', -apple-system, system-ui, sans-serif;
+  }
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #fff;
+    border-radius: 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.4);
+  }
+  .abs { position: absolute; }
+  .tile {
+    position: absolute;
+    background: #f7f7f7;
+    border-radius: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    touch-action: manipulation;
+    transition: transform 0.08s ease, background 0.08s ease;
+  }
+  .tile:active, .tile.pressed {
+    background: #e4e4e4;
+    transform: scale(0.96);
+  }
+  .tile img {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+  }
+  .tile span {
+    position: absolute;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 20px;
+    color: #222;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Gradient background -->
+  <div class="abs" style="left:0;top:0;width:390px;height:428px;background:linear-gradient(-20.93deg, #ffffff 20.615%, #E3E5FC 90.817%);"></div>
+
+  <!-- Leaf illustration -->
+  <div class="abs" style="left:-110.85px;top:145.09px;width:634.7px;height:130.08px;overflow:hidden;">
+    <img src="assets/leaf.svg" style="width:100%;height:100%;display:block;" alt="">
+  </div>
+
+  <!-- Status bar -->
+  <div class="abs" style="left:0;top:0;width:390px;height:44px;background:transparent;z-index:10;overflow:hidden;">
+    <!-- Time -->
+    <span class="abs" style="left:24px;top:14px;font-family:'Satoshi',sans-serif;font-weight:600;font-size:15px;color:#222;letter-spacing:-0.3px;">9:41</span>
+    <!-- Status icons -->
+    <div class="abs" style="right:14px;top:16px;display:flex;align-items:center;gap:5px;">
+      <!-- Signal bars SVG -->
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="7" width="3" height="5" rx="0.5" fill="#222"/>
+        <rect x="4.5" y="4.5" width="3" height="7.5" rx="0.5" fill="#222"/>
+        <rect x="9" y="2" width="3" height="10" rx="0.5" fill="#222"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="0.5" fill="#222"/>
+      </svg>
+      <!-- Battery SVG -->
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="#222" stroke-opacity="0.35"/>
+        <rect x="2" y="2" width="17" height="8" rx="1.5" fill="#222"/>
+        <path d="M23 4v4a2 2 0 0 0 0-4z" fill="#222" fill-opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Top nav bar -->
+  <div class="abs" style="left:0;top:44px;width:390px;height:72px;background:rgba(217,217,217,0.01);">
+    <!-- Menu icon -->
+    <div class="abs" style="left:16px;top:24px;width:24px;height:24px;">
+      <img src="assets/menu.svg" style="width:100%;height:100%;display:block;" alt="menu">
+    </div>
+    <!-- Availability -->
+    <div class="abs" style="right:20px;top:26px;display:flex;align-items:center;gap:6px;">
+      <img src="assets/avg_pace.svg" style="width:24px;height:24px;" alt="avg_pace">
+      <span style="font-family:'Satoshi',sans-serif;font-weight:500;font-size:16px;line-height:20px;color:#222;white-space:nowrap;">Availability</span>
+    </div>
+  </div>
+
+  <!-- White background below gradient -->
+  <div class="abs" style="left:0;top:428px;width:390px;height:316px;background:#fff;"></div>
+
+  <!-- Scan any part tile -->
+  <div class="tile" style="left:24px;top:468px;width:163px;height:80px;">
+    <img src="assets/barcode_scanner.svg" style="left:20px;top:16px;" alt="barcode_scanner">
+    <span style="left:20px;top:44px;">Scan any part</span>
+  </div>
+
+  <!-- Return to IA tile -->
+  <div class="tile" style="left:203px;top:468px;width:163px;height:80px;">
+    <img src="assets/outbound.svg" style="left:20px;top:16px;" alt="outbound">
+    <span style="left:20px;top:44px;">Return to IA</span>
+  </div>
+
+  <!-- Stock info tile -->
+  <div class="tile" id="tileStockInfo" style="left:24px;top:564px;width:163px;height:80px;">
+    <img src="assets/package_2.svg" style="left:20px;top:16px;" alt="package_2">
+    <span style="left:20px;top:44px;">Stock info</span>
+  </div>
+
+  <!-- Missing parts tile -->
+  <div class="tile" style="left:203px;top:564px;width:163px;height:80px;">
+    <img src="assets/location_disabled.svg" style="left:20px;top:16px;" alt="location_disabled">
+    <span style="left:20px;top:44px;">Missing parts</span>
+  </div>
+
+  <!-- Return History tile -->
+  <div class="tile" style="left:24px;top:660px;width:342px;height:60px;">
+    <img src="assets/book_5.svg" style="left:20px;top:20px;" alt="book_5">
+    <span style="left:52px;top:20px;">Return History</span>
+  </div>
+
+  <!-- Bottom nav bar -->
+  <div class="abs" style="left:0;top:744px;width:390px;height:100px;background:#fff;border-top:0.5px solid #e8e8e8;overflow:hidden;">
+
+    <!-- Home tab (active) -->
+    <div class="abs" style="left:24px;top:15.5px;width:64px;height:44px;overflow:hidden;">
+      <img src="assets/cottage.svg" style="position:absolute;left:20px;top:0;width:24px;height:24px;" alt="cottage">
+      <span style="position:absolute;left:15px;top:28px;font-family:'Satoshi',sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#222;white-space:nowrap;">Home</span>
+    </div>
+
+    <!-- Unlock tab -->
+    <div class="abs" style="left:117px;top:15.5px;width:64px;height:44px;overflow:hidden;">
+      <img src="assets/unlock.svg" style="position:absolute;left:21px;top:0;width:24px;height:24px;" alt="unlock">
+      <span style="position:absolute;left:50%;top:28px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#919191;white-space:nowrap;">Unlock</span>
+    </div>
+
+    <!-- Workbench tab -->
+    <div class="abs" style="left:210px;top:15.5px;width:64px;height:44px;overflow:hidden;">
+      <img src="assets/workbench.svg" style="position:absolute;left:20px;top:0;width:24px;height:24px;" alt="workbench">
+      <span style="position:absolute;left:50%;top:28px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#919191;white-space:nowrap;">Workbench</span>
+    </div>
+
+    <!-- Profile tab -->
+    <div class="abs" style="left:302px;top:15.5px;width:64px;height:44px;overflow:hidden;">
+      <img src="assets/profile.svg" style="position:absolute;left:20px;top:0;width:24px;height:24px;" alt="profile">
+      <span style="position:absolute;left:14px;top:28px;font-family:'Satoshi',sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#919191;white-space:nowrap;">Profile</span>
+    </div>
+
+  </div>
+
+</div>
+<script>
+  // Reliable pressed state for touch devices
+  document.querySelectorAll('.tile').forEach(tile => {
+    tile.addEventListener('touchstart', () => tile.classList.add('pressed'), { passive: true });
+    tile.addEventListener('touchend', () => tile.classList.remove('pressed'), { passive: true });
+    tile.addEventListener('touchcancel', () => tile.classList.remove('pressed'), { passive: true });
+  });
+
+  // Stock info navigation
+  document.getElementById('tileStockInfo').addEventListener('click', () => {
+    window.location.href = 'stock-info.html';
+  });
+</script>
+</body>
+</html>

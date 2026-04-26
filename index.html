@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Refurb QC</title>
+<script>
+// Version guard — runs before anything else.
+// Fetches version.json with a timestamp so it always bypasses every cache layer.
+// If the version changed since last visit, wipes all SW caches and hard-reloads.
+(function(){
+  var STORED_KEY = 'rqc-version';
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var latest = data.v;
+      var stored = localStorage.getItem(STORED_KEY);
+      if (stored !== latest) {
+        localStorage.setItem(STORED_KEY, latest);
+        // Nuke all SW caches then hard reload
+        if ('caches' in window) {
+          caches.keys().then(function(keys){
+            return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+          }).then(function(){ location.reload(true); });
+        } else {
+          location.reload(true);
+        }
+      }
+    })
+    .catch(function(){}); // offline — skip silently
+})();
+</script>
+<!-- PWA -->
+<link rel="manifest" href="/refurb-prototype/manifest.json">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Refurb QC">
+<link rel="apple-touch-icon" href="/refurb-prototype/assets/apple-touch-icon.png">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%;
+  overflow:hidden; position:fixed;
+  overscroll-behavior:none;
+  background:#fff;
+  font-family:'Satoshi',-apple-system,system-ui,sans-serif;
+}
+.phone {
+  width:390px; height:844px;
+  background:#fff; position:relative;
+  overflow:hidden; transform-origin:top left;
+}
+
+/* ── TILES ─────────────────────────────────────────────── */
+.tile {
+  position:absolute;
+  background:#f7f7f7; border-radius:12px;
+  cursor:pointer; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  transition:transform .08s ease, background .08s ease;
+}
+.tile:active, .tile.pressed { background:#e4e4e4; transform:scale(.96); }
+.tile img { position:absolute; width:20px; height:20px; }
+.tile svg { position:absolute; }
+.tile span {
+  position:absolute;
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:16px; line-height:20px; color:#222; white-space:nowrap;
+}
+
+/* ── GRADIENT BG ───────────────────────────────────────── */
+.gradient-bg {
+  position:absolute; left:0; top:0;
+  width:100%; height:428px;
+  background:linear-gradient(-20.93deg,#ffffff 20.615%,#E3E5FC 90.817%);
+  z-index:0;
+}
+
+/* ── ILLUSTRATION STRIP ────────────────────────────────── */
+.illus-strip {
+  position:absolute; top:0; left:0;
+  width:780px; height:428px; display:flex;
+  pointer-events:none; z-index:1;
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+}
+.illus-half {
+  flex-shrink:0; width:390px; height:428px;
+  position:relative; overflow:hidden;
+}
+.illus-half img { position:absolute; display:block; }
+
+/* ── CONTENT STRIP ─────────────────────────────────────── */
+.content-strip {
+  position:absolute; left:0; top:428px; bottom:100px;
+  width:780px; display:flex;
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  z-index:2;
+}
+.panel { flex-shrink:0; width:390px; position:relative; height:100%; }
+
+/* ── SHIFT STATUS CARD ─────────────────────────────────── */
+.shift-row {
+  /* Anchored 16px above the tiles row so gap is always consistent */
+  position:absolute; left:24px; bottom:212px;
+  width:342px; height:56px;
+  background:#f7f7f7; border-radius:12px;
+  display:flex; align-items:center;
+  padding:0 16px; gap:8px;
+}
+.shift-label {
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:16px; color:#222; flex:1;
+}
+.shift-pill {
+  background:#00654f; color:#fff;
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:12px; line-height:16px;
+  padding:8px 16px; border-radius:100px; white-space:nowrap;
+}
+
+/* ── MY WORK BAR ───────────────────────────────────────── */
+.mw-bar {
+  position:absolute; bottom:0; left:0;
+  width:390px; height:80px;
+  display:flex; align-items:center;
+  padding:0 20px 0 24px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  border-top:.5px solid #e8e8e8;
+  background:#fff;
+  transition:background .08s;
+}
+.mw-bar:active { background:#fafafa; }
+.mw-bar-title {
+  font-family:'Satoshi',sans-serif; font-weight:700;
+  font-size:14px; color:#222; flex:1;
+}
+.icon-btn {
+  width:48px; height:48px; border-radius:50%;
+  background:#f7f7f7;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+
+/* ── BOTTOM NAV ────────────────────────────────────────── */
+#bottomNav {
+  position:absolute; bottom:0; left:0;
+  width:100%; height:100px;
+  background:#fff; border-top:.5px solid #e8e8e8;
+  z-index:10;
+}
+.nav-tab {
+  position:absolute; top:16px; width:64px; height:68px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.nav-tab img {
+  width:24px; height:24px;
+  filter:brightness(0) invert(1) brightness(0.57);
+}
+.nav-tab.active img { filter:brightness(0); }
+.nav-tab span {
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:12px; line-height:16px; color:#919191; white-space:nowrap;
+}
+.nav-tab.active span { color:#222; }
+#navIndicator {
+  position:absolute; top:0; height:2px; width:44px;
+  background:#222; border-radius:1px;
+  transition:left .32s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── MY WORK DASHBOARD OVERLAY ─────────────────────────── */
+/*  Does NOT cover the nav — bottom:100px keeps it above.   */
+/*  Transform is managed entirely by JS.                    */
+#myWorkOverlay {
+  position:absolute; left:0; top:0; right:0; bottom:100px;
+  background:#fff; z-index:20;
+  will-change:transform;
+}
+
+.mw-header {
+  position:absolute; left:0; top:0;
+  width:100%; height:80px;
+  display:flex; align-items:center;
+  padding:0 20px 0 24px;
+  border-bottom:.5px solid #e8e8e8;
+  background:#fff;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.mw-header-title {
+  font-family:'Satoshi',sans-serif; font-weight:700;
+  font-size:14px; color:#222; flex:1;
+}
+
+.mw-tabs {
+  position:absolute; left:0; top:80px;
+  width:100%; height:48px;
+  display:flex; align-items:flex-end;
+  padding:0 24px; border-bottom:.5px solid #e8e8e8; gap:24px;
+}
+.mw-tab {
+  padding-bottom:10px;
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:16px; line-height:20px; color:#919191;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  border-bottom:2px solid transparent;
+  transition:color .15s, border-color .15s;
+}
+.mw-tab.active { color:#222; border-bottom-color:#222; }
+
+/* Days body — fills overlay below tabs */
+#mwDaysBody {
+  position:absolute; left:0; top:128px; right:0; bottom:0;
+  overflow-y:auto; padding:24px 24px 108px;
+  -webkit-overflow-scrolling:touch;
+}
+.mw-productivity-title {
+  font-family:'Satoshi',sans-serif; font-weight:700;
+  font-size:32px; line-height:40px; color:#222; margin-bottom:16px;
+}
+
+/* Two-column stats card */
+.mw-stats-card {
+  background:#f7f7f7; border-radius:12px;
+  display:flex; align-items:stretch; height:76px;
+}
+.mw-stat-col {
+  flex:1; display:flex; flex-direction:column;
+  justify-content:center; padding:0 16px; gap:4px;
+}
+.mw-stat-divider { width:1px; background:#e8e8e8; margin:16px 0; flex-shrink:0; }
+.mw-stat-label {
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:12px; line-height:16px; color:#717171;
+}
+.mw-stat-value {
+  font-family:'Satoshi',sans-serif; font-weight:700;
+  font-size:16px; line-height:20px; color:#222;
+}
+
+#mwEmpty {
+  position:absolute; left:0; top:128px; right:0; bottom:0;
+  display:none; align-items:center; justify-content:center;
+  font-family:'Satoshi',sans-serif; font-size:15px; color:#aaa;
+}
+#mwEmpty.visible { display:flex; }
+
+/* ── DATE PICKER (independent sibling, slides over nav) ── */
+#datePicker {
+  position:absolute; left:0; bottom:0;
+  width:100%; height:100px;
+  background:#fff; border-top:.5px solid #e8e8e8;
+  overflow:hidden;
+  z-index:25;    /* above nav (10) and overlay (20) */
+  will-change:transform;
+}
+
+#dpTrack {
+  position:absolute; inset:0;
+  display:flex;
+  overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  padding-left:155px; padding-right:155px;
+  z-index:1;
+}
+#dpTrack::-webkit-scrollbar { display:none; }
+
+.date-cell {
+  flex-shrink:0; width:80px; height:100px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:6px; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.date-cell.future { opacity:.35; pointer-events:none; }
+.date-day-num {
+  font-family:'Satoshi',sans-serif; font-weight:700;
+  font-size:18px; line-height:22px; color:#222;
+}
+.date-day-name {
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:12px; line-height:16px; color:#717171;
+}
+
+/* Fixed selection indicator */
+.dp-selector-bg {
+  position:absolute; top:0; left:155px;
+  width:80px; height:100%;
+  background:#f7f7f7; pointer-events:none; z-index:0;
+}
+.dp-selector-line {
+  position:absolute; top:0; left:169px;
+  width:52px; height:2px;
+  background:#222; pointer-events:none; z-index:2;
+}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <div class="gradient-bg"></div>
+
+  <!-- Illustration strip -->
+  <div class="illus-strip" id="illustStrip">
+    <div class="illus-half">
+      <img src="assets/illus-home.svg"
+           style="left:-110.85px;top:145px;width:634.7px;height:130.08px;" alt="">
+    </div>
+    <div class="illus-half">
+      <img src="assets/illus-transfers.svg"
+           style="left:-110.85px;top:145px;width:634.7px;height:130.08px;" alt="">
+    </div>
+  </div>
+
+  <!-- Content strip -->
+  <div class="content-strip" id="contentStrip">
+
+    <!-- HOME PANEL -->
+    <div class="panel">
+      <div class="shift-row">
+        <img src="assets/avg_pace.svg" style="width:24px;height:24px;flex-shrink:0;" alt="">
+        <span class="shift-label">Shift status</span>
+        <span class="shift-pill">On Duty</span>
+      </div>
+
+      <div class="tile" style="left:24px;bottom:104px;width:163px;height:92px;">
+        <img src="assets/apps.svg" style="left:20px;top:16px;width:24px;height:24px;" alt="">
+        <span style="left:20px;top:52px;">Quick access</span>
+      </div>
+
+      <div class="tile" id="tileStock" style="left:203px;bottom:104px;width:163px;height:92px;">
+        <img src="assets/package_2.svg" style="left:20px;top:16px;" alt="">
+        <span style="left:20px;top:52px;">Stock</span>
+      </div>
+
+      <div class="mw-bar" id="myWorkBar">
+        <span class="mw-bar-title">My work dashboard</span>
+        <div class="icon-btn">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M5 12.5L10 7.5L15 12.5" stroke="#222" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSFERS PANEL -->
+    <div class="panel">
+      <div class="tile" style="left:24px;bottom:100px;width:163px;height:80px;">
+        <img src="assets/outbound.svg" style="left:20px;top:16px;" alt="">
+        <span style="left:20px;top:44px;">Return to IA</span>
+      </div>
+      <div class="tile" style="left:203px;bottom:100px;width:163px;height:80px;">
+        <img src="assets/location_disabled.svg" style="left:20px;top:16px;" alt="">
+        <span style="left:20px;top:44px;">Missing parts</span>
+      </div>
+      <div class="tile" style="left:24px;bottom:24px;width:342px;height:60px;">
+        <img src="assets/book_5.svg" style="left:20px;top:20px;" alt="">
+        <span style="left:52px;top:20px;">Return History</span>
+      </div>
+    </div>
+
+  </div><!-- /content-strip -->
+
+  <!-- Bottom nav -->
+  <div id="bottomNav">
+    <div id="navIndicator" style="left:34px;"></div>
+    <div class="nav-tab active" id="navHome" style="left:24px;">
+      <img src="assets/cottage.svg" alt="">
+      <span>Home</span>
+    </div>
+    <div class="nav-tab" id="navTransfers" style="left:117px;">
+      <img src="assets/outbound.svg" alt="">
+      <span>Transfers</span>
+    </div>
+    <div class="nav-tab" id="navWorkbench" style="left:210px;">
+      <img src="assets/workbench.svg" alt="">
+      <span>Workbench</span>
+    </div>
+    <div class="nav-tab" id="navProfile" style="left:302px;">
+      <img src="assets/profile.svg" alt="">
+      <span>Profile</span>
+    </div>
+  </div>
+
+  <!-- My Work Dashboard overlay (does NOT cover nav — bottom:100px in CSS) -->
+  <div id="myWorkOverlay">
+    <div class="mw-header" id="mwHeader">
+      <span class="mw-header-title">My work dashboard</span>
+      <div class="icon-btn">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 7.5L10 12.5L15 7.5" stroke="#222" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="mw-tabs">
+      <div class="mw-tab active" data-period="days">Days</div>
+      <div class="mw-tab" data-period="weeks">Weeks</div>
+      <div class="mw-tab" data-period="months">Months</div>
+    </div>
+
+    <div id="mwDaysBody">
+      <div class="mw-productivity-title">Productivity</div>
+      <div class="mw-stats-card">
+        <div class="mw-stat-col">
+          <div class="mw-stat-label">Repaired/target</div>
+          <div class="mw-stat-value" id="statBikes">7/10 bikes</div>
+        </div>
+        <div class="mw-stat-divider"></div>
+        <div class="mw-stat-col">
+          <div class="mw-stat-label">Avg. time/repair</div>
+          <div class="mw-stat-value" id="statTime">35 mins</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="mwEmpty">No data for this period</div>
+  </div>
+
+  <!-- Date picker: sibling to overlay, slides independently over nav -->
+  <div id="datePicker">
+    <div class="dp-selector-bg"></div>
+    <div id="dpTrack"></div>
+    <div class="dp-selector-line"></div>
+  </div>
+
+</div><!-- /phone -->
+<script>
+// ─────────────────────────────────────────────────────────────
+// SCALE
+// ─────────────────────────────────────────────────────────────
+const phone   = document.getElementById('phone');
+const NAV_H   = 100;
+const BAR_H   = 80;
+let   phoneH  = 844;
+let   mwStartY;   // top of bar in phone coords = phoneH - NAV_H - BAR_H
+
+function scaleApp() {
+  const s = window.innerWidth / 390;
+  phoneH  = Math.round(window.innerHeight / s);
+  mwStartY = phoneH - NAV_H - BAR_H;
+  phone.style.transform = `scale(${s})`;
+  phone.style.height    = phoneH + 'px';
+}
+scaleApp();
+
+// ─────────────────────────────────────────────────────────────
+// TILE PRESS FEEDBACK
+// ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tile').forEach(t => {
+  t.addEventListener('touchstart',  () => t.classList.add('pressed'),    { passive:true });
+  t.addEventListener('touchend',    () => t.classList.remove('pressed'), { passive:true });
+  t.addEventListener('touchcancel', () => t.classList.remove('pressed'), { passive:true });
+});
+
+// ─────────────────────────────────────────────────────────────
+// MAIN TABS (Home / Transfers)
+// ─────────────────────────────────────────────────────────────
+const illustStrip  = document.getElementById('illustStrip');
+const contentStrip = document.getElementById('contentStrip');
+const bottomNav    = document.getElementById('bottomNav');
+const navIndicator = document.getElementById('navIndicator');
+const INDICATOR_X  = { home:34, transfers:127, workbench:220, profile:312 };
+
+function switchMainTab(tab) {
+  const offset = tab === 'transfers' ? -390 : 0;
+  illustStrip.style.transform  = `translateX(${offset}px)`;
+  contentStrip.style.transform = `translateX(${offset}px)`;
+  navIndicator.style.left = INDICATOR_X[tab] + 'px';
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('nav' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  if (el) el.classList.add('active');
+}
+
+document.getElementById('navHome').addEventListener('click',      () => switchMainTab('home'));
+document.getElementById('navTransfers').addEventListener('click', () => switchMainTab('transfers'));
+document.getElementById('tileStock').addEventListener('click', () => { window.location.href = 'stock-info.html'; });
+
+// ─────────────────────────────────────────────────────────────
+// MY WORK DASHBOARD  open / close
+// ─────────────────────────────────────────────────────────────
+const myWorkOverlay = document.getElementById('myWorkOverlay');
+const datePicker    = document.getElementById('datePicker');
+const dpTrack       = document.getElementById('dpTrack');
+const mwDaysBody    = document.getElementById('mwDaysBody');
+const mwEmpty       = document.getElementById('mwEmpty');
+let   mwIsOpen      = false;
+let   pickerVisible = false;  // tracks whether date picker is shown
+
+// Easing curves
+const EASE_OUT  = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+const EASE_STD  = 'cubic-bezier(0.4, 0, 0.2, 1)';
+
+// Initialise overlay fully off-screen below (will snap to bar position on open)
+myWorkOverlay.style.transform = `translateY(${phoneH}px)`;
+// Initialise date picker off-screen below
+datePicker.style.transform    = 'translateY(100%)';
+
+function openMyWork() {
+  if (mwIsOpen) return;
+  mwIsOpen = true;
+
+  setMwPeriod('days');      // always reset to Days
+  updateStats(0);
+  requestAnimationFrame(() => { dpTrack.scrollLeft = PAST_DAYS * CELL_W; });
+
+  // 1. Overlay: snap to bar position instantly, then slide to y=0
+  myWorkOverlay.style.transition = 'none';
+  myWorkOverlay.style.transform  = `translateY(${mwStartY}px)`;
+  void myWorkOverlay.offsetWidth;   // force reflow so the snap is instant
+  myWorkOverlay.style.transition = `transform 0.38s ${EASE_STD}`;
+  myWorkOverlay.style.transform  = 'translateY(0)';
+
+  // 2. Nav: slide down slowly — stays visible during most of the animation
+  bottomNav.style.transition = `transform 0.65s ${EASE_OUT}`;
+  bottomNav.style.transform  = 'translateY(100%)';
+
+  // 3. Date picker: slides up and OVER the nav (independent element)
+  pickerVisible = true;
+  datePicker.style.transition = `transform 0.38s ${EASE_STD} 0.15s`;
+  datePicker.style.transform  = 'translateY(0)';
+}
+
+function closeMyWork(quick) {
+  if (!mwIsOpen) return;
+  mwIsOpen = false;
+  const dur = quick ? '0.28s' : '0.35s';
+
+  // Overlay slides fully off-screen below (home bar becomes "the card")
+  myWorkOverlay.style.transition = `transform ${dur} ${EASE_STD}`;
+  myWorkOverlay.style.transform  = `translateY(${phoneH}px)`;
+
+  // Nav slides back up
+  bottomNav.style.transition = `transform ${dur} ${EASE_OUT}`;
+  bottomNav.style.transform  = '';
+
+  // Date picker slides down below
+  if (pickerVisible) {
+    pickerVisible = false;
+    datePicker.style.transition = `transform ${dur} ${EASE_STD}`;
+    datePicker.style.transform  = 'translateY(100%)';
+  }
+}
+
+document.getElementById('myWorkBar').addEventListener('click', openMyWork);
+// Header tap → close (but not if the tap was part of a drag)
+document.getElementById('mwHeader').addEventListener('click', () => { if (!isPulling) closeMyWork(); });
+
+// ─────────────────────────────────────────────────────────────
+// MY WORK INNER TABS
+// ─────────────────────────────────────────────────────────────
+function setMwPeriod(period) {
+  document.querySelectorAll('.mw-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.period === period);
+  });
+  if (period === 'days') {
+    mwDaysBody.style.display = '';
+    mwEmpty.classList.remove('visible');
+    // Show date picker
+    pickerVisible = true;
+    datePicker.style.transition = `transform 0.28s ${EASE_STD}`;
+    datePicker.style.transform  = 'translateY(0)';
+  } else {
+    mwDaysBody.style.display = 'none';
+    mwEmpty.classList.add('visible');
+    // Hide date picker
+    pickerVisible = false;
+    datePicker.style.transition = `transform 0.28s ${EASE_STD}`;
+    datePicker.style.transform  = 'translateY(100%)';
+  }
+}
+
+document.querySelectorAll('.mw-tab').forEach(tab => {
+  tab.addEventListener('click', e => {
+    e.stopPropagation();
+    setMwPeriod(tab.dataset.period);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// PULL-TO-DISMISS
+// ─────────────────────────────────────────────────────────────
+let isPulling = false, pullStartY = 0, pullLastY = 0;
+const PULL_THRESHOLD = 0.28;   // fraction of phoneH to trigger close
+
+myWorkOverlay.addEventListener('touchstart', e => {
+  pullStartY = e.touches[0].clientY;
+  pullLastY  = pullStartY;
+  isPulling  = false;
+}, { passive: true });
+
+myWorkOverlay.addEventListener('touchmove', e => {
+  pullLastY = e.touches[0].clientY;
+  const screenDelta = pullLastY - pullStartY;
+  if (!isPulling) {
+    // Start pull only when dragging DOWN and the body scroll is at the top
+    if (screenDelta > 8 && mwDaysBody.scrollTop <= 0) {
+      isPulling = true;
+    } else {
+      return;
+    }
+  }
+  // Convert screen pixels → phone pixels
+  const scale      = window.innerWidth / 390;
+  const phoneDelta = Math.max(0, screenDelta / scale);
+
+  // Drag overlay (no transition while dragging)
+  myWorkOverlay.style.transition = 'none';
+  myWorkOverlay.style.transform  = `translateY(${phoneDelta}px)`;
+
+  // Drag date picker with overlay (if visible)
+  if (pickerVisible) {
+    datePicker.style.transition = 'none';
+    datePicker.style.transform  = `translateY(${phoneDelta}px)`;
+  }
+  // Gradually reveal nav behind: inverse of phoneDelta
+  const navReveal = Math.min(phoneDelta / mwStartY, 1) * 100;
+  bottomNav.style.transition = 'none';
+  bottomNav.style.transform  = `translateY(${100 - navReveal}%)`;
+}, { passive: true });
+
+myWorkOverlay.addEventListener('touchend', () => {
+  if (!isPulling) return;
+  isPulling = false;
+  const scale      = window.innerWidth / 390;
+  const phoneDelta = (pullLastY - pullStartY) / scale;
+
+  if (phoneDelta > phoneH * PULL_THRESHOLD) {
+    closeMyWork(true);   // threshold met → overlay flies off, home bar "sticks" at bottom
+  } else {
+    // Snap back open
+    myWorkOverlay.style.transition = `transform 0.28s ${EASE_OUT}`;
+    myWorkOverlay.style.transform  = 'translateY(0)';
+    if (pickerVisible) {
+      datePicker.style.transition = `transform 0.28s ${EASE_OUT}`;
+      datePicker.style.transform  = 'translateY(0)';
+    }
+    bottomNav.style.transition = `transform 0.28s ${EASE_OUT}`;
+    bottomNav.style.transform  = 'translateY(100%)';
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// DATE PICKER
+// ─────────────────────────────────────────────────────────────
+const PAST_DAYS   = 30;
+const FUTURE_DAYS = 3;    // show 3 future dates so 2 are visible to the right
+const TOTAL_CELLS = PAST_DAYS + 1 + FUTURE_DAYS;   // 34 cells; idx 30 = today
+const CELL_W      = 80;
+const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAILY_STATS = {
+  0: { bikes:'7/10', time:'35 mins' },
+  1: { bikes:'8/10', time:'32 mins' },
+  2: { bikes:'6/10', time:'38 mins' },
+  3: { bikes:'9/10', time:'28 mins' },
+  4: { bikes:'5/10', time:'42 mins' },
+  5: { bikes:'7/10', time:'36 mins' },
+  6: { bikes:'8/10', time:'33 mins' },
+};
+
+function updateStats(daysAgo) {
+  const s = DAILY_STATS[daysAgo] || {
+    bikes: `${6 + Math.abs(daysAgo % 3)}/10`,
+    time:  `${30 + daysAgo % 8} mins`
+  };
+  document.getElementById('statBikes').textContent = s.bikes + ' bikes';
+  document.getElementById('statTime').textContent  = s.time;
+}
+
+(function initDatePicker() {
+  const today = new Date();
+  for (let i = 0; i < TOTAL_CELLS; i++) {
+    const daysOffset = i - PAST_DAYS;   // negative = past, 0 = today, positive = future
+    const d = new Date(today);
+    d.setDate(today.getDate() + daysOffset);
+    const cell = document.createElement('div');
+    cell.className = 'date-cell' + (daysOffset > 0 ? ' future' : '');
+    cell.innerHTML =
+      `<span class="date-day-num">${d.getDate()}</span>` +
+      `<span class="date-day-name">${DAY_NAMES[d.getDay()]}</span>`;
+    if (daysOffset <= 0) {
+      cell.addEventListener('click', () => {
+        dpTrack.scrollTo({ left: i * CELL_W, behavior:'smooth' });
+        updateStats(-daysOffset);   // daysOffset is negative for past
+      });
+    }
+    dpTrack.appendChild(cell);
+  }
+
+  // ── Tick sound (iOS alarm-style short click) ──────────────
+  let audioCtx;
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+  function playTick() {
+    try {
+      const ctx  = getAudioCtx();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      // Short high-pitched click, quick decay
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.04);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.04);
+    } catch (_) {}
+  }
+  function haptic() {
+    if (navigator.vibrate) navigator.vibrate(15);
+  }
+
+  // Snap + per-cell click feedback + stats update
+  let snapTimer, lastCenteredIdx = PAST_DAYS;
+
+  dpTrack.addEventListener('scroll', () => {
+    // Fire tick on each cell change while scrolling
+    const raw  = Math.round(dpTrack.scrollLeft / CELL_W);
+    const idx  = Math.max(0, Math.min(PAST_DAYS, raw));
+    if (idx !== lastCenteredIdx) {
+      lastCenteredIdx = idx;
+      playTick();
+      haptic();
+      updateStats(PAST_DAYS - idx);
+    }
+    // Snap after scroll settles
+    clearTimeout(snapTimer);
+    snapTimer = setTimeout(() => {
+      const r2  = Math.round(dpTrack.scrollLeft / CELL_W);
+      const i2  = Math.max(0, Math.min(PAST_DAYS, r2));
+      dpTrack.scrollTo({ left: i2 * CELL_W, behavior:'smooth' });
+    }, 120);
+  });
+})();
+
+// Centre today whenever My Work opens
+function centreToday() {
+  dpTrack.scrollLeft = PAST_DAYS * CELL_W;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Patch openMyWork to also centre today
+// ─────────────────────────────────────────────────────────────
+const _openMyWork = openMyWork;
+// Already wired; centreToday called inside openMyWork via requestAnimationFrame above.
+
+updateStats(0);
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  // Reload when SW sends update message (most reliable path)
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'SW_UPDATED') window.location.reload();
+  });
+
+  navigator.serviceWorker.register('/refurb-prototype/sw.js').then(reg => {
+    // Backup: reload when SW controller changes
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+    // On every app launch / resume, force a fresh SW check
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update();
+    });
+    // Also check immediately on load
+    reg.update();
+  });
+}
+</script>
+</body>
+</html>
