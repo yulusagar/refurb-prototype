@@ -747,7 +747,7 @@ function updateStats(daysAgo) {
       lastCenteredIdx = idx;
       // Fire sound and vibration in the same call for perfect sync
       playTick();
-      if (navigator.vibrate) navigator.vibrate([0, 60]);   // pattern form is sharper on Android
+      if (navigator.vibrate) navigator.vibrate(60);
       updateStats(PAST_DAYS - idx);
     }
     rafId = requestAnimationFrame(vibPoll);
@@ -755,7 +755,7 @@ function updateStats(daysAgo) {
 
   dpTrack.addEventListener('touchstart', () => {
     // Prime vibration engine on first touch (guaranteed user activation)
-    if (navigator.vibrate) navigator.vibrate(1);
+    if (navigator.vibrate) navigator.vibrate(10);
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(vibPoll);  // start 60fps poll
   }, { passive: true });
