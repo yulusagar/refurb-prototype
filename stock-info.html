@@ -46,7 +46,7 @@
     touch-action: pan-y;
   }
   #heroSpacer {
-    height: 156px; /* 228-72 = 156px gap before tabs bar */
+    height: 250px;
     flex-shrink: 0;
   }
 
@@ -454,10 +454,10 @@
   }
   .user-count {
     font-family: 'Satoshi', sans-serif;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 20px;
-    color: #717171;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 28px;
+    color: #222;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -498,9 +498,22 @@
     <span id="resetBtn" style="flex-shrink:0;">reset filter</span>
   </div>
 
-  <!-- Hero count (overlays the scroll container spacer, pointer-events:none so scroll passes through) -->
-  <p id="heroCount" style="position:absolute;left:50%;top:72px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:700;font-size:40px;line-height:52px;color:#222;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:1;">710</p>
-  <p id="heroParts" style="position:absolute;left:50%;top:124px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:500;font-size:14px;line-height:20px;color:#222;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:1;">QC ready parts</p>
+  <!-- Hero ring (decorative arc behind the count) -->
+  <svg id="heroRing" width="200" height="200" viewBox="0 0 200 200"
+    style="position:absolute;left:50%;top:97px;transform:translateX(-50%);pointer-events:none;z-index:1;will-change:opacity;">
+    <circle cx="100" cy="100" r="88" fill="none" stroke="#f0f0f0" stroke-width="7"/>
+    <circle id="ringFill" cx="100" cy="100" r="88"
+      fill="none" stroke="#3D4CD4" stroke-width="7" stroke-linecap="round"
+      transform="rotate(-90 100 100)"
+      stroke-dasharray="552.9 552.9"
+      style="transition:stroke-dasharray 0.35s cubic-bezier(0.4,0,0.2,1);"/>
+  </svg>
+  <!-- Hero count -->
+  <p id="heroCount" style="position:absolute;left:50%;top:153px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:700;font-size:72px;line-height:88px;color:#222;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">995</p>
+  <!-- Subtitle -->
+  <p id="heroParts" style="position:absolute;left:50%;top:245px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:500;font-size:14px;line-height:20px;color:#717171;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">QC ready parts</p>
+  <!-- Context line -->
+  <p id="heroContext" style="position:absolute;left:50%;top:269px;transform:translateX(-50%);font-family:'Satoshi',sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#aaa;white-space:nowrap;text-align:center;will-change:transform,opacity;pointer-events:none;z-index:2;">Across 15 people · 10 types</p>
 
   <!-- Single scroll container: hero spacer + sticky tabs + tab content -->
   <div id="scrollContainer">
@@ -508,13 +521,34 @@
 
     <!-- Sticky tabs bar -->
     <div class="tabs-bar">
-      <div class="tab active" data-tab="type"><span class="tab-label" id="lblType">Type</span></div>
-      <div class="tab" data-tab="user"><span class="tab-label" id="lblUser">User</span></div>
+      <div class="tab active" data-tab="user"><span class="tab-label" id="lblUser">User</span></div>
+      <div class="tab" data-tab="type"><span class="tab-label" id="lblType">Type</span></div>
       <div class="tab" data-tab="state"><span class="tab-label" id="lblState">State</span></div>
     </div>
 
+  <!-- USER tab content -->
+  <div class="tab-content active" id="content-user">
+    <!-- Search bar -->
+    <div id="userSearchWrap" class="search-wrap">
+      <div id="userSearchBar" class="search-bar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;">
+          <circle cx="8.5" cy="8.5" r="5.5" stroke="#919191" stroke-width="1.6"/>
+          <path d="M13 13l3.5 3.5" stroke="#919191" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <input id="userSearchInput" class="search-input" type="text" placeholder="Search" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button id="userSearchClear" class="search-clear" aria-label="Clear search">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 1l10 10M11 1L1 11" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="userNoResults" class="search-no-results">No users found</div>
+    <!-- user rows injected by JS -->
+  </div>
+
   <!-- TYPE tab content -->
-  <div class="tab-content active" id="content-type">
+  <div class="tab-content" id="content-type">
     <!-- Search bar -->
     <div id="typeSearchWrap" class="search-wrap">
       <div id="typeSearchBar" class="search-bar">
@@ -675,27 +709,6 @@
       <span class="row-count" id="stc-faulty">60</span>
     </div>
     <div class="row-divider"></div>
-  </div>
-
-  <!-- USER tab content -->
-  <div class="tab-content" id="content-user">
-    <!-- Search bar -->
-    <div id="userSearchWrap" class="search-wrap">
-      <div id="userSearchBar" class="search-bar">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;">
-          <circle cx="8.5" cy="8.5" r="5.5" stroke="#919191" stroke-width="1.6"/>
-          <path d="M13 13l3.5 3.5" stroke="#919191" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        <input id="userSearchInput" class="search-input" type="text" placeholder="Search" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button id="userSearchClear" class="search-clear" aria-label="Clear search">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M1 1l10 10M11 1L1 11" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-    <div id="userNoResults" class="search-no-results">No users found</div>
-    <!-- user rows injected by JS -->
   </div>
 
   </div><!-- end scrollContainer -->
@@ -872,7 +885,7 @@
     status: new Set(), type: new Set(), state: new Set(), user: new Set(),
     typeVersions: {}, // { 'motor': Set<string>, ... }
   };
-  let activeTab = 'type';
+  let activeTab = 'user';
 
   // ── User-type fraction: selected users' share of a given type ────
   // When user filter is active, each type cell is scaled by how much
@@ -1010,6 +1023,26 @@
     _ctrRaf = requestAnimationFrame(tick);
   }
 
+  // ── Ring fill (animated via CSS transition on stroke-dasharray) ──
+  const CIRC = 2 * Math.PI * 88; // ≈ 552.9px
+  const ringFillEl = document.getElementById('ringFill');
+  // TOTAL_QC_READY = unfiltered total, computed once while sel is empty
+  const TOTAL_QC_READY = computeCount([], [], []);
+
+  function setRingFill(count) {
+    const pct    = Math.min(count / TOTAL_QC_READY, 1);
+    const filled = (CIRC * pct).toFixed(1);
+    ringFillEl.style.strokeDasharray = `${filled} ${CIRC.toFixed(1)}`;
+  }
+
+  // ── Hero context line ─────────────────────────────────────────────
+  function updateHeroContext() {
+    const activeUsers = USERS.filter(u => userRowCount(u.name) > 0).length;
+    const activeTypes = TYPES.filter(t => Math.round(typeRowCount(t)) > 0).length;
+    document.getElementById('heroContext').textContent =
+      `Across ${activeUsers} ${activeUsers === 1 ? 'person' : 'people'} · ${activeTypes} ${activeTypes === 1 ? 'type' : 'types'}`;
+  }
+
   // ── Update all UI ─────────────────────────────────────────────────
   function updateUI() {
     // ── 1. Type rows ──────────────────────────────────────────────
@@ -1074,9 +1107,11 @@
       row.classList.toggle('selected', sel.user.has(u.name));
     });
 
-    // ── 5. Hero count (animated) ─────────────────────────────────
+    // ── 5. Hero count + ring + context ───────────────────────────
     const heroVal = computeCount([...sel.status], [...sel.type], [...sel.state]);
     setHeroCount(heroVal);
+    setRingFill(heroVal);
+    updateHeroContext();
 
     // ── 6. Tab badge labels ───────────────────────────────────────
     const BASE = { type: 'Type', user: 'User', state: 'State' };
@@ -1322,16 +1357,19 @@
   });
 
   // ── Scroll-driven header collapse ────────────────────────────────
-  const SCROLL_THRESHOLD = 156; // full heroSpacer height — tabs touch header at this point
+  const SCROLL_THRESHOLD = 250; // full heroSpacer height — tabs touch header at this point
 
   function applyScrollProgress(scrollTop) {
     const p = Math.min(Math.max(scrollTop / SCROLL_THRESHOLD, 0), 1);
 
-    // Hero fades up and into the header
+    // Hero elements fade and lift into the header
+    document.getElementById('heroRing').style.opacity = 1 - p;
     document.getElementById('heroCount').style.opacity = 1 - p;
-    document.getElementById('heroCount').style.transform = `translateX(-50%) translateY(${-p * 48}px)`;
+    document.getElementById('heroCount').style.transform = `translateX(-50%) translateY(${-p * 56}px)`;
     document.getElementById('heroParts').style.opacity = 1 - p;
-    document.getElementById('heroParts').style.transform = `translateX(-50%) translateY(${-p * 32}px)`;
+    document.getElementById('heroParts').style.transform = `translateX(-50%) translateY(${-p * 36}px)`;
+    document.getElementById('heroContext').style.opacity = 1 - p;
+    document.getElementById('heroContext').style.transform = `translateX(-50%) translateY(${-p * 24}px)`;
 
     // Header title fades in (starts at 50% progress so it appears near the end)
     const titleP = Math.min(Math.max((p - 0.5) / 0.5, 0), 1);
@@ -1427,7 +1465,7 @@
   }, { passive: true });
 
   // ── Tab switching ─────────────────────────────────────────────────
-  const TAB_ORDER = ['type', 'user', 'state'];
+  const TAB_ORDER = ['user', 'type', 'state'];
   let isAnimating = false;
 
   function switchTab(name, slideDir) {

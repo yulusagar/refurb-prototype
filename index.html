@@ -109,7 +109,10 @@ html, body {
   background:#f7f7f7; border-radius:12px;
   display:flex; align-items:center;
   padding:0 16px; gap:8px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition:background 0.12s;
 }
+.shift-row:active { background:#e4e4e4; }
 .shift-label {
   font-family:'Satoshi',sans-serif; font-weight:500;
   font-size:16px; color:#222; flex:1;
@@ -331,7 +334,7 @@ html, body {
 
     <!-- HOME PANEL -->
     <div class="panel">
-      <div class="shift-row">
+      <div class="shift-row" id="shiftCard">
         <img src="assets/avg_pace.svg" style="width:24px;height:24px;flex-shrink:0;" alt="">
         <span class="shift-label">Shift status</span>
         <span class="shift-pill">On Duty</span>
@@ -501,7 +504,8 @@ function switchMainTab(tab) {
 
 document.getElementById('navHome').addEventListener('click',      () => switchMainTab('home'));
 document.getElementById('navTransfers').addEventListener('click', () => switchMainTab('transfers'));
-document.getElementById('tileStock').addEventListener('click', () => { window.location.href = 'stock-info.html'; });
+document.getElementById('tileStock').addEventListener('click',  () => { window.location.href = 'stock-info.html'; });
+document.getElementById('shiftCard').addEventListener('click', () => { window.location.href = 'shift.html'; });
 
 // ─────────────────────────────────────────────────────────────
 // MY WORK DASHBOARD  open / close

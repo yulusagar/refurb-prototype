@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Refurb QC — Availability</title>
+<link rel="manifest" href="/refurb-prototype/manifest.json">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="/refurb-prototype/assets/apple-touch-icon.png">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%;
+    overflow:hidden; position:fixed;
+    overscroll-behavior:none;
+    font-family:'Satoshi', -apple-system, system-ui, sans-serif;
+    background:#fff;
+  }
+  .phone {
+    width:390px; height:844px;
+    background:#fff;
+    position:relative; overflow:hidden;
+    transform-origin:top left;
+  }
+
+  /* ── App bar ── */
+  #appBar {
+    position:absolute; left:0; top:0;
+    width:100%; height:72px;
+    background:#fff;
+    display:flex; align-items:center;
+    justify-content:space-between;
+    padding:0 12px 0 4px;
+    z-index:5;
+    border-bottom:.5px solid #e8e8e8;
+  }
+  #backBtn {
+    width:48px; height:48px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    flex-shrink:0;
+  }
+  #appBarTitle {
+    position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    font-family:'Satoshi',sans-serif; font-weight:700;
+    font-size:16px; line-height:20px; color:#222;
+    white-space:nowrap;
+  }
+
+  /* ── Scroll content ── */
+  #scrollContent {
+    position:absolute; left:0; top:72px;
+    width:100%; bottom:108px;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+
+  /* ── Status hero card ── */
+  .status-hero {
+    margin:24px 24px 0;
+    background:#f7f7f7;
+    border-radius:16px;
+    padding:20px;
+    display:flex; align-items:center; gap:16px;
+  }
+  .status-avatar {
+    width:48px; height:48px;
+    background:#E8EAFD; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Satoshi',sans-serif; font-weight:700;
+    font-size:20px; color:#3D4CD4;
+    flex-shrink:0;
+  }
+  .status-info { flex:1; }
+  .status-name {
+    font-family:'Satoshi',sans-serif; font-weight:700;
+    font-size:16px; line-height:20px; color:#222;
+  }
+  .status-role {
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:13px; line-height:18px; color:#717171;
+    margin-top:2px;
+  }
+  .status-pill {
+    background:#00654f; color:#fff;
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:12px; line-height:16px;
+    padding:6px 14px; border-radius:100px;
+    white-space:nowrap; flex-shrink:0;
+  }
+  .status-pill.off-duty {
+    background:#717171;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    font-family:'Satoshi',sans-serif; font-weight:700;
+    font-size:13px; line-height:16px; color:#aaa;
+    letter-spacing:.04em; text-transform:uppercase;
+    padding:24px 24px 12px;
+  }
+
+  /* ── Info rows ── */
+  .info-card {
+    margin:0 24px;
+    background:#f7f7f7; border-radius:16px;
+    overflow:hidden;
+  }
+  .info-row {
+    display:flex; align-items:center;
+    padding:0 16px;
+    height:60px;
+    gap:12px;
+  }
+  .info-row + .info-row {
+    border-top:.5px solid #e8e8e8;
+  }
+  .info-row-icon {
+    width:20px; height:20px; flex-shrink:0;
+    opacity:.5;
+  }
+  .info-row-label {
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:15px; color:#717171; flex:1;
+  }
+  .info-row-value {
+    font-family:'Satoshi',sans-serif; font-weight:600;
+    font-size:15px; color:#222;
+    text-align:right;
+  }
+
+  /* ── Schedule blocks ── */
+  .schedule-card {
+    margin:0 24px;
+    border-radius:16px; overflow:hidden;
+    border:.5px solid #e8e8e8;
+  }
+  .schedule-row {
+    display:flex; align-items:center;
+    padding:14px 16px; gap:12px;
+  }
+  .schedule-row + .schedule-row { border-top:.5px solid #e8e8e8; }
+  .schedule-dot {
+    width:8px; height:8px; border-radius:50%;
+    flex-shrink:0;
+  }
+  .schedule-dot.active { background:#00654f; }
+  .schedule-dot.upcoming { background:#d0d0d0; }
+  .schedule-time {
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:14px; color:#717171; width:72px; flex-shrink:0;
+  }
+  .schedule-task {
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:15px; color:#222; flex:1;
+  }
+  .schedule-badge {
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:12px; color:#3D4CD4;
+    background:#ECEEFE; padding:4px 10px;
+    border-radius:100px; white-space:nowrap;
+  }
+  .schedule-badge.done {
+    color:#717171; background:#f0f0f0;
+  }
+
+  /* ── Bottom footer ── */
+  #footer {
+    position:absolute; left:0; bottom:0;
+    width:100%; background:#fff;
+    border-top:.5px solid #e8e8e8;
+    padding:16px 24px 36px;
+  }
+  #startBtn {
+    width:100%; height:52px;
+    background:#222; color:#fff;
+    font-family:'Satoshi',sans-serif; font-weight:700;
+    font-size:16px; line-height:20px;
+    border:none; border-radius:100px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:background .12s, transform .08s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #startBtn:active { background:#444; transform:scale(.98); }
+  #startBtn.started {
+    background:#f7f7f7; color:#717171; cursor:default;
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <!-- App bar -->
+  <div id="appBar">
+    <div id="backBtn">
+      <img src="assets/back.svg" style="width:24px;height:24px;" alt="back">
+    </div>
+    <span id="appBarTitle">Availability</span>
+  </div>
+
+  <!-- Scrollable content -->
+  <div id="scrollContent">
+
+    <!-- Status hero -->
+    <div class="status-hero">
+      <div class="status-avatar">S</div>
+      <div class="status-info">
+        <div class="status-name">Sagar</div>
+        <div class="status-role">Quality Technician</div>
+      </div>
+      <span class="status-pill" id="dutyPill">On Duty</span>
+    </div>
+
+    <!-- Shift info -->
+    <div class="section-label">Today's Shift</div>
+    <div class="info-card">
+      <div class="info-row">
+        <svg class="info-row-icon" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="#222" stroke-width="1.6"/>
+          <path d="M12 7v5l3 3" stroke="#222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="info-row-label">Shift time</span>
+        <span class="info-row-value">9:00 AM – 6:00 PM</span>
+      </div>
+      <div class="info-row">
+        <svg class="info-row-icon" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="4" width="18" height="18" rx="3" stroke="#222" stroke-width="1.6"/>
+          <path d="M3 9h18" stroke="#222" stroke-width="1.6"/>
+          <path d="M8 2v3M16 2v3" stroke="#222" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span class="info-row-label">Date</span>
+        <span class="info-row-value" id="shiftDate">—</span>
+      </div>
+      <div class="info-row">
+        <svg class="info-row-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#222" stroke-width="1.6"/>
+          <circle cx="12" cy="9" r="2.5" stroke="#222" stroke-width="1.6"/>
+        </svg>
+        <span class="info-row-label">Location</span>
+        <span class="info-row-value">Warehouse B</span>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="section-label">Schedule</div>
+    <div class="schedule-card">
+      <div class="schedule-row">
+        <div class="schedule-dot done"></div>
+        <span class="schedule-time">9:00 AM</span>
+        <span class="schedule-task">Morning check-in</span>
+        <span class="schedule-badge done">Done</span>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-dot active"></div>
+        <span class="schedule-time">10:00 AM</span>
+        <span class="schedule-task">QC inspection round</span>
+        <span class="schedule-badge">In progress</span>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-dot upcoming"></div>
+        <span class="schedule-time">1:00 PM</span>
+        <span class="schedule-task">Lunch break</span>
+        <span class="schedule-badge done">Upcoming</span>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-dot upcoming"></div>
+        <span class="schedule-time">2:00 PM</span>
+        <span class="schedule-task">Transfers review</span>
+        <span class="schedule-badge done">Upcoming</span>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-dot upcoming"></div>
+        <span class="schedule-time">5:00 PM</span>
+        <span class="schedule-task">End of day report</span>
+        <span class="schedule-badge done">Upcoming</span>
+      </div>
+    </div>
+
+    <div style="height:24px;"></div>
+  </div>
+
+  <!-- Footer -->
+  <div id="footer">
+    <button id="startBtn" class="started">On Duty</button>
+  </div>
+
+</div>
+<script>
+  // ── Date ──────────────────────────────────────────────────────────
+  const days  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now   = new Date();
+  document.getElementById('shiftDate').textContent =
+    `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
+
+  // ── Back button ───────────────────────────────────────────────────
+  document.getElementById('backBtn').addEventListener('click', () => {
+    window.history.length > 1 ? window.history.back() : (window.location.href = 'index.html');
+  });
+
+  // ── Scale ─────────────────────────────────────────────────────────
+  (function scaleApp() {
+    const phone  = document.getElementById('phone');
+    const vv = window.visualViewport;
+    const w  = vv ? vv.width  : window.innerWidth;
+    const h  = vv ? vv.height : window.innerHeight;
+    const s  = w / 390;
+    phone.style.transform = `scale(${s})`;
+    phone.style.height    = Math.round(h / s) + 'px';
+    phone.style.opacity   = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      phone.style.transition = 'opacity 0.18s ease';
+      phone.style.opacity    = '1';
+      setTimeout(() => { phone.style.transition = ''; }, 220);
+    }));
+  })();
+</script>
+</body>
+</html>
