@@ -724,29 +724,28 @@ function updateStats(daysAgo) {
       osc.stop(ctx.currentTime + 0.04);
     } catch (_) {}
   }
-  // Per-cell feedback — tick sound on scroll, vibration on touchmove
-  let lastCenteredIdx = PAST_DAYS;
+  // Track whether the user is actively touching the slider
+  let isTouching = false;
+  dpTrack.addEventListener('touchstart', () => {
+    isTouching = true;
+    // Prime vibration engine — touchstart is a guaranteed user activation in Chrome Android
+    if (navigator.vibrate) navigator.vibrate(1);
+  }, { passive: true });
+  dpTrack.addEventListener('touchend',    () => { isTouching = false; }, { passive: true });
+  dpTrack.addEventListener('touchcancel', () => { isTouching = false; }, { passive: true });
 
+  // Per-cell feedback on scroll (fires after scrollLeft updates)
+  let lastCenteredIdx = PAST_DAYS;
   dpTrack.addEventListener('scroll', () => {
     const raw = Math.round(dpTrack.scrollLeft / CELL_W);
     const idx = Math.max(0, Math.min(PAST_DAYS, raw));
     if (idx !== lastCenteredIdx) {
       lastCenteredIdx = idx;
       playTick();
+      if (isTouching && navigator.vibrate) navigator.vibrate(30);
       updateStats(PAST_DAYS - idx);
     }
   });
-
-  // Vibration on touchmove — touchmove is always a user activation in Android Chrome
-  let lastVibIdx = PAST_DAYS;
-  dpTrack.addEventListener('touchmove', () => {
-    const raw = Math.round(dpTrack.scrollLeft / CELL_W);
-    const idx = Math.max(0, Math.min(PAST_DAYS, raw));
-    if (idx !== lastVibIdx) {
-      lastVibIdx = idx;
-      if (navigator.vibrate) navigator.vibrate(25);
-    }
-  }, { passive: true });
 })();
 
 // Centre today whenever My Work opens
