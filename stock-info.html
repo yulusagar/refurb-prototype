@@ -91,6 +91,7 @@
     top: 25px;
     transform: translateX(-50%);
     pointer-events: none;
+    will-change: transform;
   }
   #heroCount {
     position: absolute;
@@ -193,8 +194,13 @@
     transition: color 0.1s ease;
     white-space: nowrap;
   }
-  .status-row .row-name  { left: 58px;  color: #222; }
-  .status-row .row-count { right: 24px; color: #717171; }
+  .status-row .row-name  { left: 58px; color: #222; font-size: 16px; font-weight: 500; }
+  .status-row .row-count {
+    right: 24px;
+    color: #222;
+    font-size: 20px;    /* matches .user-count */
+    font-weight: 700;
+  }
   .status-row.selected .row-count { color: #3D4CD4; }
 
   /* ── Type rows (104px) ── */
@@ -633,8 +639,8 @@
     </div>
     <!-- Column header -->
     <div class="col-header">
-      <span class="col-header-label">Rt name</span>
-      <span class="col-header-label">Qc ready parts</span>
+      <span class="col-header-label">RT name</span>
+      <span class="col-header-label">QC ready parts</span>
     </div>
     <div id="userNoResults" class="search-no-results">No users found</div>
     <!-- user rows injected by JS -->
@@ -1447,15 +1453,21 @@
 
   const scrollContainer = document.getElementById('scrollContainer');
   const heroBlock   = document.getElementById('heroBlock');
+  const heroRingEl  = document.getElementById('heroRing');
   const headerTitle = document.getElementById('headerTitle');
 
-  // Animates only TWO opacity values (GPU-composited, no layout).
-  // heroBlock scrolls naturally with the container — no transform chasing needed.
+  // heroBlock is in-flow so it scrolls naturally with the container.
+  // JS only:
+  //  1. fades the whole block (opacity on heroBlock = one GPU layer)
+  //  2. adds extra upward translateY on the ring so it visibly moves
+  //     with the text instead of appearing anchored to the viewport.
   function applyScrollProgress(st) {
     const p      = Math.min(Math.max(st / SCROLL_THRESHOLD, 0), 1);
     const titleP = Math.min(Math.max((p - 0.5) / 0.5, 0), 1);
     heroBlock.style.opacity   = 1 - p;
     headerTitle.style.opacity = titleP;
+    // Ring rises 32 px extra so it clearly travels with the count/subtitle
+    heroRingEl.style.transform = `translateX(-50%) translateY(${-p * 32}px)`;
   }
 
   // RAF gate: one style update per animation frame, no matter how fast scroll fires.
@@ -1467,6 +1479,14 @@
       applyScrollProgress(_latestSt);
       _scrollRaf = null;
     });
+  }
+
+  // Collapse hero (scroll to SCROLL_THRESHOLD) — called when keyboard opens.
+  function collapseHero() {
+    if (scrollContainer.scrollTop >= SCROLL_THRESHOLD) return;
+    if (isSnapping) return;
+    isSnapping = true;
+    animateScroll(scrollContainer, SCROLL_THRESHOLD, 240, () => { isSnapping = false; });
   }
 
   function updateTabContentSpacers() {
@@ -1497,18 +1517,25 @@
   }
 
   // ── Snap scroll: hero ↔ header lock to two discrete positions ────
-  let isTouching = false;
-  let isSnapping  = false;
-  let snapTimer   = null;
+  let isTouching   = false;
+  let isSnapping   = false;
+  let snapTimer    = null;
+  // Record where the touch started so we know the scroll direction intention.
+  // If the user was in the list (scrollTop > SCROLL_THRESHOLD) when they began
+  // the gesture, a fast upward swipe must stop at SCROLL_THRESHOLD — not
+  // carry momentum all the way down to reveal the hero.  Revealing the hero
+  // requires a deliberate downward swipe *starting from* SCROLL_THRESHOLD.
+  let touchStartSt = 0;
 
   scrollContainer.addEventListener('touchstart', () => {
-    isTouching = true;
-    clearTimeout(snapTimer); // cancel any pending snap if finger returns
+    isTouching   = true;
+    touchStartSt = scrollContainer.scrollTop;
+    clearTimeout(snapTimer);
   }, { passive: true });
 
   scrollContainer.addEventListener('touchend', () => {
     isTouching = false;
-    trySnap(); // snap immediately on finger-lift (no debounce needed for touch)
+    trySnap();
   }, { passive: true });
 
   scrollContainer.addEventListener('touchcancel', () => {
@@ -1519,9 +1546,15 @@
     if (isTouching || isSnapping) return;
     const st = scrollContainer.scrollTop;
     if (st <= 0 || st >= SCROLL_THRESHOLD) return;
-    const target = st < SCROLL_THRESHOLD / 2 ? 0 : SCROLL_THRESHOLD;
+
+    // Gesture started above the threshold (in the list) → always collapse.
+    // Gesture started at/below threshold (deliberate hero drag) → normal midpoint.
+    const target = touchStartSt > SCROLL_THRESHOLD
+      ? SCROLL_THRESHOLD
+      : (st < SCROLL_THRESHOLD / 2 ? 0 : SCROLL_THRESHOLD);
+
     isSnapping = true;
-    animateScroll(scrollContainer, target, 180, () => { isSnapping = false; });
+    animateScroll(scrollContainer, target, 200, () => { isSnapping = false; });
   }
 
   // Custom scroll animator — duration in ms, ease-out cubic
@@ -1730,7 +1763,7 @@
     updateTabContentSpacers();
   }
 
-  typeSearchInput.addEventListener('focus', () => { typeSearchBar.classList.add('focused'); updateTypeClearBtn(); });
+  typeSearchInput.addEventListener('focus', () => { typeSearchBar.classList.add('focused'); updateTypeClearBtn(); collapseHero(); });
   typeSearchInput.addEventListener('blur',  () => { typeSearchBar.classList.remove('focused'); updateTypeClearBtn(); });
   typeSearchInput.addEventListener('input', applyTypeSearch);
 
@@ -1803,7 +1836,7 @@
     updateTabContentSpacers();
   }
 
-  searchInput.addEventListener('focus', () => { searchBar.classList.add('focused'); updateClearBtn(); });
+  searchInput.addEventListener('focus', () => { searchBar.classList.add('focused'); updateClearBtn(); collapseHero(); });
   searchInput.addEventListener('blur',  () => { searchBar.classList.remove('focused'); updateClearBtn(); });
   searchInput.addEventListener('input', applySearch);
 
