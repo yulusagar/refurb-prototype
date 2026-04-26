@@ -46,7 +46,9 @@
     justify-content: space-between;
     padding: 0 12px 0 4px;
     z-index: 5;
-    border-bottom: .5px solid #e8e8e8;
+    /* box-shadow draws the divider line without adding to layout height,
+       so the scroll container starts at exactly 72px with 0px gap. */
+    box-shadow: 0 0.5px 0 0 #e8e8e8;
   }
   #backBtn {
     width: 48px; height: 48px;
