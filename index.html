@@ -279,6 +279,12 @@ html, body {
   -webkit-tap-highlight-color:transparent;
   scroll-snap-align: center;
 }
+/* Future dates: visible but dimmed, no snap point so slider bounces back to today */
+.date-cell.future {
+  opacity:.35;
+  pointer-events:none;
+  scroll-snap-align: none;
+}
 .date-day-num {
   font-family:'Satoshi',sans-serif; font-weight:700;
   font-size:18px; line-height:22px; color:#222;
@@ -652,8 +658,8 @@ myWorkOverlay.addEventListener('touchend', () => {
 // DATE PICKER
 // ─────────────────────────────────────────────────────────────
 const PAST_DAYS   = 30;
-const FUTURE_DAYS = 0;    // no future dates — today is the rightmost scrollable cell
-const TOTAL_CELLS = PAST_DAYS + 1;   // 31 cells; idx 30 = today
+const FUTURE_DAYS = 3;    // visible but not selectable
+const TOTAL_CELLS = PAST_DAYS + 1 + FUTURE_DAYS;   // 34 cells; idx 30 = today
 const CELL_W      = 80;
 const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAILY_STATS = {
@@ -682,14 +688,16 @@ function updateStats(daysAgo) {
     const d = new Date(today);
     d.setDate(today.getDate() + daysOffset);
     const cell = document.createElement('div');
-    cell.className = 'date-cell';
+    cell.className = 'date-cell' + (daysOffset > 0 ? ' future' : '');
     cell.innerHTML =
       `<span class="date-day-num">${d.getDate()}</span>` +
       `<span class="date-day-name">${DAY_NAMES[d.getDay()]}</span>`;
-    cell.addEventListener('click', () => {
-      dpTrack.scrollTo({ left: i * CELL_W, behavior:'smooth' });
-      updateStats(-daysOffset);
-    });
+    if (daysOffset <= 0) {
+      cell.addEventListener('click', () => {
+        dpTrack.scrollTo({ left: i * CELL_W, behavior:'smooth' });
+        updateStats(-daysOffset);
+      });
+    }
     dpTrack.appendChild(cell);
   }
 
