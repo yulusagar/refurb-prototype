@@ -104,7 +104,7 @@ html, body {
 /* ── SHIFT STATUS CARD ─────────────────────────────────── */
 .shift-row {
   /* Anchored 16px above the tiles row so gap is always consistent */
-  position:absolute; left:24px; bottom:212px;
+  position:absolute; left:24px; bottom:228px;
   width:342px; height:56px;
   background:#f7f7f7; border-radius:12px;
   display:flex; align-items:center;
@@ -126,19 +126,20 @@ html, body {
 
 /* ── MY WORK BAR ───────────────────────────────────────── */
 .mw-bar {
-  position:absolute; bottom:0; left:0;
-  width:390px; height:80px;
+  position:absolute; bottom:24px; left:24px;
+  width:342px; height:80px;
   display:flex; align-items:center;
-  padding:0 20px 0 24px;
+  padding:0 16px;
+  gap:16px;
   cursor:pointer; -webkit-tap-highlight-color:transparent;
-  border-top:.5px solid #e8e8e8;
-  background:#fff;
+  border-radius:12px;
+  background:#f7f7f7;
   transition:background .08s;
 }
-.mw-bar:active { background:#fafafa; }
+.mw-bar:active { background:#e4e4e4; }
 .mw-bar-title {
-  font-family:'Satoshi',sans-serif; font-weight:700;
-  font-size:14px; color:#222; flex:1;
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:16px; color:#222; flex:1;
 }
 .icon-btn {
   width:48px; height:48px; border-radius:50%;
@@ -188,14 +189,15 @@ html, body {
   position:absolute; left:0; top:0;
   width:100%; height:80px;
   display:flex; align-items:center;
-  padding:0 20px 0 24px;
+  padding:0 16px 0 24px;
+  gap:16px;
   border-bottom:.5px solid #e8e8e8;
   background:#fff;
   cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
 .mw-header-title {
-  font-family:'Satoshi',sans-serif; font-weight:700;
-  font-size:14px; color:#222; flex:1;
+  font-family:'Satoshi',sans-serif; font-weight:500;
+  font-size:16px; color:#222; flex:1;
 }
 
 .mw-tabs {
@@ -340,17 +342,18 @@ html, body {
         <span class="shift-pill">On Duty</span>
       </div>
 
-      <div class="tile" style="left:24px;bottom:104px;width:163px;height:92px;">
+      <div class="tile" style="left:24px;bottom:120px;width:163px;height:92px;">
         <img src="assets/apps.svg" style="left:20px;top:16px;width:24px;height:24px;" alt="">
         <span style="left:20px;top:52px;">Quick access</span>
       </div>
 
-      <div class="tile" id="tileStock" style="left:203px;bottom:104px;width:163px;height:92px;">
+      <div class="tile" id="tileStock" style="left:203px;bottom:120px;width:163px;height:92px;">
         <img src="assets/package_2.svg" style="left:20px;top:16px;" alt="">
         <span style="left:20px;top:52px;">Stock</span>
       </div>
 
       <div class="mw-bar" id="myWorkBar">
+        <img src="assets/swap_driving_apps_wheel.svg" style="width:24px;height:24px;flex-shrink:0;opacity:0.75;" alt="">
         <span class="mw-bar-title">My work dashboard</span>
         <div class="icon-btn">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -403,6 +406,7 @@ html, body {
   <!-- My Work Dashboard overlay (does NOT cover nav — bottom:100px in CSS) -->
   <div id="myWorkOverlay">
     <div class="mw-header" id="mwHeader">
+      <img src="assets/swap_driving_apps_wheel.svg" style="width:24px;height:24px;flex-shrink:0;opacity:0.75;" alt="">
       <span class="mw-header-title">My work dashboard</span>
       <div class="icon-btn">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -448,11 +452,12 @@ html, body {
 // ─────────────────────────────────────────────────────────────
 // SCALE
 // ─────────────────────────────────────────────────────────────
-const phone   = document.getElementById('phone');
-const NAV_H   = 100;
-const BAR_H   = 80;
-let   phoneH  = 844;
-let   mwStartY;   // top of bar in phone coords = phoneH - NAV_H - BAR_H
+const phone      = document.getElementById('phone');
+const NAV_H      = 100;
+const BAR_H      = 80;
+const BAR_BOTTOM = 24;   // gap between bar and nav (Figma: bottom:24px)
+let   phoneH     = 844;
+let   mwStartY;   // top of bar in phone coords = phoneH - NAV_H - BAR_BOTTOM - BAR_H
 
 function scaleApp() {
   // visualViewport gives the true visible area on mobile (excludes browser chrome)
@@ -461,7 +466,7 @@ function scaleApp() {
   const h  = vv ? vv.height : window.innerHeight;
   const s  = w / 390;
   phoneH   = Math.round(h / s);
-  mwStartY = phoneH - NAV_H - BAR_H;
+  mwStartY = phoneH - NAV_H - BAR_BOTTOM - BAR_H;
   phone.style.transform = `scale(${s})`;
   phone.style.height    = phoneH + 'px';
 }
