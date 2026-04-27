@@ -92,8 +92,8 @@
   }
 
   #heroGradient {
-    position:absolute; top:0; left:0; width:100%; height:120px;
-    background:linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0) 100%);
+    position:absolute; top:0; left:0; width:100%; height:60px;
+    background:linear-gradient(to bottom, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0) 100%);
     pointer-events:none;
   }
   #heroScrim {
@@ -116,6 +116,7 @@
     transition:background .45s ease;
   }
   #dutyPill.off-duty { background:#717171; }
+  #dutyPill.paused   { background:#D4690A; }
   #carouselDots {
     position:absolute; bottom:20px; left:0; width:100%;
     display:flex; align-items:center; justify-content:center; gap:8px; z-index:2;
@@ -214,8 +215,8 @@
   /* Track — centred vertically in sliderSection */
   #sliderTrack {
     position:absolute;
-    left:36px; top:50%; transform:translateY(-50%);
-    width:318px; height:64px;
+    left:24px; top:50%; transform:translateY(-50%);
+    width:278px; height:64px;
     border-radius:100px; overflow:hidden;
     background:#004838;           /* on-duty default */
     transition:background .45s ease;
@@ -225,13 +226,54 @@
      Starts at scaleX(0) so nothing is visible in default state. */
   #sliderFill {
     position:absolute; left:0; top:0; bottom:0;
-    width:318px;
+    width:278px;
     transform-origin:left center;
     transform:scaleX(0);          /* hidden at rest */
     border-radius:100px;
     pointer-events:none;
     background:linear-gradient(90deg, #009966 0%, #D4690A 100%); /* on-duty */
     transition:background .45s ease;
+  }
+
+  /* Pause / play button — right of slider track */
+  #pauseBtn {
+    position:absolute;
+    right:24px; top:50%;
+    transform:translateY(-50%);
+    width:56px; height:56px;
+    border-radius:50%;
+    background:#f2f2f2;
+    border:none; outline:none;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    box-shadow:0 1px 4px rgba(0,0,0,0.10);
+    transition:background .18s ease, opacity .3s ease;
+    z-index:4;
+  }
+  #pauseBtn:active { background:#e8e8e8; }
+  #pauseBtn.paused { background:#FFF3E8; }
+  #pauseBtn.hidden { opacity:0; pointer-events:none; }
+
+  /* Toast */
+  #toast {
+    position:absolute;
+    bottom:132px; left:50%;
+    transform:translateX(-50%) translateY(8px);
+    background:rgba(28,28,28,0.90);
+    color:#fff;
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:14px; line-height:18px;
+    padding:10px 22px;
+    border-radius:100px;
+    white-space:nowrap;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .22s ease, transform .22s ease;
+    z-index:20;
+  }
+  #toast.show {
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
   }
 
   #sliderLabel {
@@ -309,7 +351,7 @@
     <div id="backBtn">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <path d="M20 12H4M4 12l7-7M4 12l7 7"
-          stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          stroke="#444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
 
@@ -389,46 +431,100 @@
         </div>
         <span id="sliderLabel">End day</span>
       </div>
+
+      <!-- Pause / play button -->
+      <button id="pauseBtn" aria-label="Pause">
+        <!-- Pause icon -->
+        <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <rect x="5.5" y="4" width="4.5" height="16" rx="1.5" fill="#333"/>
+          <rect x="14" y="4" width="4.5" height="16" rx="1.5" fill="#333"/>
+        </svg>
+        <!-- Play icon — hidden initially -->
+        <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" style="display:none">
+          <path d="M7 4.5l13 7.5-13 7.5V4.5z" fill="#D4690A"/>
+        </svg>
+      </button>
     </div>
 
   </div><!-- /bottomCard -->
+
+  <div id="toast"></div>
 
 </div><!-- /phone -->
 
 <script>
   // ── State ─────────────────────────────────────────────────────────
   let onDuty = true;
+  let paused  = false;
 
-  const heroArea = document.getElementById('heroArea');
-  const dutyPill = document.getElementById('dutyPill');
-  const track    = document.getElementById('sliderTrack');
-  const fill     = document.getElementById('sliderFill');
-  const label    = document.getElementById('sliderLabel');
-  const thumb    = document.getElementById('sliderThumb');
+  const heroArea  = document.getElementById('heroArea');
+  const dutyPill  = document.getElementById('dutyPill');
+  const track     = document.getElementById('sliderTrack');
+  const fill      = document.getElementById('sliderFill');
+  const label     = document.getElementById('sliderLabel');
+  const thumb     = document.getElementById('sliderThumb');
+  const pauseBtn  = document.getElementById('pauseBtn');
+  const pauseIcon = document.getElementById('pauseIcon');
+  const playIcon  = document.getElementById('playIcon');
+  const toastEl   = document.getElementById('toast');
 
   const SLIDER = {
     on:  { track:'#004838', fill:'linear-gradient(90deg,#009966 0%,#D4690A 100%)', confirm:'confirmed-end'   },
     off: { track:'#1a1a1a', fill:'linear-gradient(90deg,#2d2d2d 0%,#00B87D 100%)', confirm:'confirmed-start' },
   };
 
+  // ── Toast ──────────────────────────────────────────────────────────
+  let toastTimer = null;
+  function showToast(msg) {
+    if (toastTimer) clearTimeout(toastTimer);
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    toastTimer = setTimeout(() => {
+      toastEl.classList.remove('show');
+      toastTimer = null;
+    }, 2400);
+  }
+
+  // ── Duty state ────────────────────────────────────────────────────
   function setSliderColors(duty) {
     const s = duty ? SLIDER.on : SLIDER.off;
     track.style.background = s.track;
     fill.style.background  = s.fill;
   }
 
+  function syncPauseBtn() {
+    // Pause button only visible when on duty
+    pauseBtn.classList.toggle('hidden', !onDuty);
+    pauseBtn.classList.toggle('paused', paused);
+    pauseIcon.style.display = paused ? 'none'  : '';
+    playIcon.style.display  = paused ? ''      : 'none';
+  }
+
   function applyDutyState(duty) {
     onDuty = duty;
+    paused = false;  // reset pause on state change
     dutyPill.textContent = duty ? 'On Duty' : 'Off Duty';
     dutyPill.classList.toggle('off-duty', !duty);
+    dutyPill.classList.remove('paused');
     label.textContent = duty ? 'End day' : 'Start day';
     heroArea.classList.toggle('off-duty', !duty);
     setSliderColors(duty);
+    syncPauseBtn();
   }
+
+  // ── Pause / play ──────────────────────────────────────────────────
+  pauseBtn.addEventListener('click', () => {
+    if (!onDuty) return;
+    paused = !paused;
+    dutyPill.textContent = paused ? 'Paused' : 'On Duty';
+    dutyPill.classList.toggle('paused', paused);
+    dutyPill.classList.toggle('off-duty', false);
+    syncPauseBtn();
+  });
 
   // ── Slider mechanics ──────────────────────────────────────────────
   const THUMB_L    = 8;
-  const THUMB_R    = 318 - 48 - 8; // 262px
+  const THUMB_R    = 278 - 48 - 8; // 222px  (track is now 278px wide)
   const CONFIRM_AT = THUMB_R * 0.82;
 
   let dragging   = false;
@@ -489,13 +585,15 @@
 
     if (thumbCur >= CONFIRM_AT) {
       locked = true;
+      const wasOnDuty    = onDuty;
       const confirmClass = onDuty ? SLIDER.on.confirm : SLIDER.off.confirm;
 
       moveThumb(THUMB_R, true);
       setTimeout(() => {
         thumb.classList.add(confirmClass);
         setTimeout(() => {
-          applyDutyState(!onDuty);
+          applyDutyState(!wasOnDuty);
+          showToast(wasOnDuty ? '🌙  Day ended' : '☀️  Day started');
           thumb.classList.remove(confirmClass);
           resetThumb(true);
           locked = false;
@@ -596,6 +694,7 @@
   }
 
   (function init() {
+    syncPauseBtn();   // set initial pause button visibility
     const phone = document.getElementById('phone');
     phone.style.opacity = '0';
     layout();
