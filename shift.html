@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Refurb QC — Availability</title>
+<title>Refurb QC — Shift</title>
 <link rel="manifest" href="/refurb-prototype/manifest.json">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="/refurb-prototype/assets/apple-touch-icon.png">
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
@@ -21,295 +22,506 @@
   }
   .phone {
     width:390px; height:844px;
-    background:#fff;
+    background:#f2f2f2;
     position:relative; overflow:hidden;
     transform-origin:top left;
   }
 
-  /* ── App bar ── */
-  #appBar {
-    position:absolute; left:0; top:0;
-    width:100%; height:72px;
-    background:#fff;
-    display:flex; align-items:center;
-    justify-content:space-between;
-    padding:0 12px 0 4px;
-    z-index:5;
-    border-bottom:.5px solid #e8e8e8;
-  }
-  #backBtn {
-    width:48px; height:48px;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; -webkit-tap-highlight-color:transparent;
-    flex-shrink:0;
-  }
-  #appBarTitle {
-    position:absolute; left:50%; top:50%;
-    transform:translate(-50%,-50%);
-    font-family:'Satoshi',sans-serif; font-weight:700;
-    font-size:16px; line-height:20px; color:#222;
-    white-space:nowrap;
-  }
-
-  /* ── Scroll content ── */
-  #scrollContent {
-    position:absolute; left:0; top:72px;
-    width:100%; bottom:108px;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-    overscroll-behavior:contain;
-  }
-
-  /* ── Status hero card ── */
-  .status-hero {
-    margin:24px 24px 0;
-    background:#f7f7f7;
-    border-radius:16px;
-    padding:20px;
-    display:flex; align-items:center; gap:16px;
-  }
-  .status-avatar {
-    width:48px; height:48px;
-    background:#E8EAFD; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Satoshi',sans-serif; font-weight:700;
-    font-size:20px; color:#3D4CD4;
-    flex-shrink:0;
-  }
-  .status-info { flex:1; }
-  .status-name {
-    font-family:'Satoshi',sans-serif; font-weight:700;
-    font-size:16px; line-height:20px; color:#222;
-  }
-  .status-role {
-    font-family:'Satoshi',sans-serif; font-weight:500;
-    font-size:13px; line-height:18px; color:#717171;
-    margin-top:2px;
-  }
-  .status-pill {
-    background:#00654f; color:#fff;
-    font-family:'Satoshi',sans-serif; font-weight:500;
-    font-size:12px; line-height:16px;
-    padding:6px 14px; border-radius:100px;
-    white-space:nowrap; flex-shrink:0;
-  }
-  .status-pill.off-duty {
-    background:#717171;
-  }
-
-  /* ── Section label ── */
-  .section-label {
-    font-family:'Satoshi',sans-serif; font-weight:700;
-    font-size:13px; line-height:16px; color:#aaa;
-    letter-spacing:.04em; text-transform:uppercase;
-    padding:24px 24px 12px;
-  }
-
-  /* ── Info rows ── */
-  .info-card {
-    margin:0 24px;
-    background:#f7f7f7; border-radius:16px;
+  /* ── Hero photo area ── */
+  #heroArea {
+    position:absolute;
+    left:0; top:0;
+    width:390px; height:420px;
+    background:#888;
     overflow:hidden;
   }
-  .info-row {
-    display:flex; align-items:center;
-    padding:0 16px;
-    height:60px;
-    gap:12px;
+  /* Actual photo — colour when on duty, greyscale when off */
+  #heroImg {
+    position:absolute;
+    left:0; top:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    object-position:center 15%;
+    filter:grayscale(0) brightness(0.88);
+    transition:filter .7s ease;
   }
-  .info-row + .info-row {
-    border-top:.5px solid #e8e8e8;
+  #heroImg.off-duty {
+    filter:grayscale(1) brightness(0.62);
   }
-  .info-row-icon {
-    width:20px; height:20px; flex-shrink:0;
-    opacity:.5;
+  #heroGradient {
+    position:absolute;
+    left:0; top:0;
+    width:100%; height:120px;
+    background:linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0) 100%);
+    pointer-events:none;
   }
-  .info-row-label {
-    font-family:'Satoshi',sans-serif; font-weight:500;
-    font-size:15px; color:#717171; flex:1;
-  }
-  .info-row-value {
-    font-family:'Satoshi',sans-serif; font-weight:600;
-    font-size:15px; color:#222;
-    text-align:right;
-  }
-
-  /* ── Schedule blocks ── */
-  .schedule-card {
-    margin:0 24px;
-    border-radius:16px; overflow:hidden;
-    border:.5px solid #e8e8e8;
-  }
-  .schedule-row {
-    display:flex; align-items:center;
-    padding:14px 16px; gap:12px;
-  }
-  .schedule-row + .schedule-row { border-top:.5px solid #e8e8e8; }
-  .schedule-dot {
-    width:8px; height:8px; border-radius:50%;
-    flex-shrink:0;
-  }
-  .schedule-dot.active { background:#00654f; }
-  .schedule-dot.upcoming { background:#d0d0d0; }
-  .schedule-time {
-    font-family:'Satoshi',sans-serif; font-weight:500;
-    font-size:14px; color:#717171; width:72px; flex-shrink:0;
-  }
-  .schedule-task {
-    font-family:'Satoshi',sans-serif; font-weight:500;
-    font-size:15px; color:#222; flex:1;
-  }
-  .schedule-badge {
-    font-family:'Satoshi',sans-serif; font-weight:500;
-    font-size:12px; color:#3D4CD4;
-    background:#ECEEFE; padding:4px 10px;
-    border-radius:100px; white-space:nowrap;
-  }
-  .schedule-badge.done {
-    color:#717171; background:#f0f0f0;
+  /* Bottom scrim so name panel doesn't collide harshly */
+  #heroScrim {
+    position:absolute;
+    left:0; bottom:0;
+    width:100%; height:80px;
+    background:linear-gradient(to top, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0) 100%);
+    pointer-events:none;
   }
 
-  /* ── Bottom footer ── */
-  #footer {
-    position:absolute; left:0; bottom:0;
-    width:100%; background:#fff;
-    border-top:.5px solid #e8e8e8;
-    padding:16px 24px 36px;
-  }
-  #startBtn {
-    width:100%; height:52px;
-    background:#222; color:#fff;
-    font-family:'Satoshi',sans-serif; font-weight:700;
-    font-size:16px; line-height:20px;
-    border:none; border-radius:100px;
+  /* ── Back button ── */
+  #backBtn {
+    position:absolute;
+    left:4px; top:10px;
+    width:48px; height:48px;
+    display:flex; align-items:center; justify-content:center;
     cursor:pointer; -webkit-tap-highlight-color:transparent;
-    transition:background .12s, transform .08s;
+    z-index:2;
+  }
+
+  /* ── Duty status pill ── */
+  #dutyPill {
+    position:absolute;
+    right:16px; top:20px;
+    padding:6px 16px;
+    border-radius:100px;
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:12px; line-height:16px;
+    color:#fff;
+    background:#00654f;
+    white-space:nowrap;
+    z-index:2;
+    transition:background .45s ease;
+  }
+  #dutyPill.off-duty { background:#717171; }
+
+  /* ── Carousel indicators ── */
+  #carouselDots {
+    position:absolute;
+    bottom:20px; left:0; width:100%;
+    display:flex; align-items:center; justify-content:center;
+    gap:8px;
+    z-index:2;
+  }
+  .dot { width:24px; height:6px; border-radius:10px; transition:background .3s; }
+  .dot.active   { background:#fff; }
+  .dot.inactive { background:rgba(255,255,255,0.38); }
+
+  /* ── White name/ID panel ── */
+  #nameSection {
+    position:absolute;
+    left:0; top:420px;
+    width:390px; height:108px;
+    background:#fff;
+    border-bottom:.5px solid #ebebeb;
+  }
+
+  /* ── Employee name ── */
+  #employeeName {
+    position:absolute;
+    left:24px; top:436px;
+    font-family:'Barlow Condensed', 'Arial Narrow', sans-serif;
+    font-weight:700;
+    font-size:48px; line-height:52px;
+    color:#111;
+    text-transform:uppercase;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:342px;
+    letter-spacing:1.5px;
+    z-index:1;
+  }
+  #employeeId {
+    position:absolute;
+    left:24px; top:492px;
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:15px; line-height:20px;
+    color:#999;
+    z-index:1;
+  }
+
+  /* ── White work-details panel ── */
+  #workSection {
+    position:absolute;
+    left:0; top:528px;
+    width:390px; height:196px;
+    background:#fff;
+  }
+  #workHeading {
+    position:absolute;
+    left:24px; top:544px;
+    font-family:'Satoshi',sans-serif; font-weight:700;
+    font-size:20px; line-height:28px;
+    color:#222;
+    z-index:1;
+  }
+
+  /* ── Work rows ── */
+  .work-row {
+    position:absolute;
+    left:0; width:390px; height:72px;
+    display:flex; align-items:center;
+    padding:0 24px;
+    gap:12px;
+    background:#fff;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:background .12s;
+    z-index:1;
+  }
+  .work-row:active { background:#f7f7f7; }
+  #locationRow::after {
+    content:'';
+    position:absolute;
+    bottom:0; left:24px; right:0;
+    height:.5px;
+    background:#e8e8e8;
+  }
+  .work-row-icon { width:24px; height:24px; flex-shrink:0; opacity:.35; }
+  .work-row-label {
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:16px; line-height:20px;
+    color:#999; flex:1;
+  }
+  .work-row-value {
+    font-family:'Satoshi',sans-serif; font-weight:500;
+    font-size:16px; line-height:20px;
+    color:#222; white-space:nowrap;
+  }
+  .work-row-chevron {
+    width:20px; height:20px; flex-shrink:0; opacity:.35;
     display:flex; align-items:center; justify-content:center;
   }
-  #startBtn:active { background:#444; transform:scale(.98); }
-  #startBtn.started {
-    background:#f7f7f7; color:#717171; cursor:default;
+
+  /* ── White slider panel ── */
+  #sliderSection {
+    position:absolute;
+    left:0; top:724px;
+    width:390px; height:120px;
+    background:#fff;
+    border-top:.5px solid #ebebeb;
   }
+
+  /* ── Slider track ── */
+  #sliderTrack {
+    position:absolute;
+    left:36px; top:748px;
+    width:318px; height:64px;
+    border-radius:100px;
+    overflow:hidden;
+    /* default = on-duty (end-day) green */
+    background:#004838;
+    transition:background .45s ease;
+  }
+
+  /* Progress fill — full track width, scaleX controlled by JS from transform-origin:left */
+  #sliderFill {
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:318px;
+    transform-origin:left center;
+    transform:scaleX(0.1);
+    border-radius:100px;
+    pointer-events:none;
+    /* default gradient: on-duty ending (green → amber) */
+    background:linear-gradient(90deg, #009966 0%, #D4690A 100%);
+    transition:background .45s ease;
+  }
+
+  #sliderLabel {
+    position:absolute;
+    left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    font-family:'Satoshi',sans-serif; font-weight:700;
+    font-size:15px; line-height:20px;
+    color:rgba(255,255,255,0.72);
+    white-space:nowrap;
+    pointer-events:none; user-select:none;
+    z-index:2;
+    transition:opacity .15s;
+  }
+
+  /* ── Slider thumb ── */
+  #sliderThumb {
+    position:absolute;
+    left:8px; top:8px;
+    width:48px; height:48px;
+    background:#fff;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    cursor:grab; cursor:-webkit-grab;
+    touch-action:none;
+    will-change:left, transform;
+    z-index:3;
+    box-shadow:0 2px 12px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.12);
+    transition:transform .15s ease, background .25s ease;
+  }
+  #sliderThumb.dragging {
+    transform:scale(1.07);
+    cursor:grabbing; cursor:-webkit-grabbing;
+  }
+  /* Confirmed: ending day → amber; starting day → green */
+  #sliderThumb.confirmed-end   { background:#D4690A; }
+  #sliderThumb.confirmed-start { background:#00654f; }
+  #sliderThumb.confirmed-end   .icon-arrow,
+  #sliderThumb.confirmed-start .icon-arrow { display:none !important; }
+  #sliderThumb.confirmed-end   .icon-check,
+  #sliderThumb.confirmed-start .icon-check { display:flex !important; }
 </style>
 </head>
 <body>
 <div class="phone" id="phone">
 
-  <!-- App bar -->
-  <div id="appBar">
+  <!-- ── Hero area ── -->
+  <div id="heroArea">
+
+    <!-- Employee photo — colour on duty, greyscale off duty -->
+    <img id="heroImg"
+      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&fit=crop&crop=top&h=900&q=85"
+      alt="Employee photo" />
+
+    <div id="heroGradient"></div>
+    <div id="heroScrim"></div>
+
+    <!-- Back button -->
     <div id="backBtn">
-      <img src="assets/back.svg" style="width:24px;height:24px;" alt="back">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M20 12H4M4 12l7-7M4 12l7 7"
+          stroke="#fff" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
-    <span id="appBarTitle">Availability</span>
+
+    <!-- Duty status pill -->
+    <div id="dutyPill">On Duty</div>
+
+    <!-- Carousel indicators -->
+    <div id="carouselDots">
+      <div class="dot active"></div>
+      <div class="dot inactive"></div>
+      <div class="dot inactive"></div>
+    </div>
+
   </div>
 
-  <!-- Scrollable content -->
-  <div id="scrollContent">
+  <!-- ── White name / ID panel ── -->
+  <div id="nameSection"></div>
+  <div id="employeeName">Sagar Malik</div>
+  <div id="employeeId">YL0176</div>
 
-    <!-- Status hero -->
-    <div class="status-hero">
-      <div class="status-avatar">S</div>
-      <div class="status-info">
-        <div class="status-name">Sagar</div>
-        <div class="status-role">Quality Technician</div>
-      </div>
-      <span class="status-pill" id="dutyPill">On Duty</span>
+  <!-- ── Work section ── -->
+  <div id="workSection"></div>
+  <div id="workHeading">Work details</div>
+
+  <!-- Location row -->
+  <div class="work-row" style="top:580px;" id="locationRow">
+    <svg class="work-row-icon" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C8.686 2 6 4.686 6 8c0 4.75 6 12 6 12s6-7.25 6-12c0-3.314-2.686-6-6-6z"
+        stroke="#222" stroke-width="1.7"/>
+      <circle cx="12" cy="8" r="2.5" stroke="#222" stroke-width="1.7"/>
+    </svg>
+    <span class="work-row-label">Location</span>
+    <span class="work-row-value">CML Workshop</span>
+    <div class="work-row-chevron">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M9 6l6 6-6 6" stroke="#222" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
-
-    <!-- Shift info -->
-    <div class="section-label">Today's Shift</div>
-    <div class="info-card">
-      <div class="info-row">
-        <svg class="info-row-icon" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="#222" stroke-width="1.6"/>
-          <path d="M12 7v5l3 3" stroke="#222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="info-row-label">Shift time</span>
-        <span class="info-row-value">9:00 AM – 6:00 PM</span>
-      </div>
-      <div class="info-row">
-        <svg class="info-row-icon" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="4" width="18" height="18" rx="3" stroke="#222" stroke-width="1.6"/>
-          <path d="M3 9h18" stroke="#222" stroke-width="1.6"/>
-          <path d="M8 2v3M16 2v3" stroke="#222" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        <span class="info-row-label">Date</span>
-        <span class="info-row-value" id="shiftDate">—</span>
-      </div>
-      <div class="info-row">
-        <svg class="info-row-icon" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#222" stroke-width="1.6"/>
-          <circle cx="12" cy="9" r="2.5" stroke="#222" stroke-width="1.6"/>
-        </svg>
-        <span class="info-row-label">Location</span>
-        <span class="info-row-value">Warehouse B</span>
-      </div>
-    </div>
-
-    <!-- Schedule -->
-    <div class="section-label">Schedule</div>
-    <div class="schedule-card">
-      <div class="schedule-row">
-        <div class="schedule-dot done"></div>
-        <span class="schedule-time">9:00 AM</span>
-        <span class="schedule-task">Morning check-in</span>
-        <span class="schedule-badge done">Done</span>
-      </div>
-      <div class="schedule-row">
-        <div class="schedule-dot active"></div>
-        <span class="schedule-time">10:00 AM</span>
-        <span class="schedule-task">QC inspection round</span>
-        <span class="schedule-badge">In progress</span>
-      </div>
-      <div class="schedule-row">
-        <div class="schedule-dot upcoming"></div>
-        <span class="schedule-time">1:00 PM</span>
-        <span class="schedule-task">Lunch break</span>
-        <span class="schedule-badge done">Upcoming</span>
-      </div>
-      <div class="schedule-row">
-        <div class="schedule-dot upcoming"></div>
-        <span class="schedule-time">2:00 PM</span>
-        <span class="schedule-task">Transfers review</span>
-        <span class="schedule-badge done">Upcoming</span>
-      </div>
-      <div class="schedule-row">
-        <div class="schedule-dot upcoming"></div>
-        <span class="schedule-time">5:00 PM</span>
-        <span class="schedule-task">End of day report</span>
-        <span class="schedule-badge done">Upcoming</span>
-      </div>
-    </div>
-
-    <div style="height:24px;"></div>
   </div>
 
-  <!-- Footer -->
-  <div id="footer">
-    <button id="startBtn" class="started">On Duty</button>
+  <!-- Profile row -->
+  <div class="work-row" style="top:652px;" id="profileRow">
+    <svg class="work-row-icon" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="1.7"/>
+      <path d="M4 20c0-3.866 3.582-7 8-7s8 3.134 8 7"
+        stroke="#222" stroke-width="1.7" stroke-linecap="round"/>
+    </svg>
+    <span class="work-row-label">Profile</span>
+    <span class="work-row-value">Quality Technician</span>
+    <div class="work-row-chevron">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M9 6l6 6-6 6" stroke="#222" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
   </div>
 
-</div>
+  <!-- ── White slider panel ── -->
+  <div id="sliderSection"></div>
+
+  <!-- ── Confirmation slider ── -->
+  <div id="sliderTrack">
+    <div id="sliderFill"></div>
+    <div id="sliderThumb">
+      <span class="icon-arrow" style="display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12h14M13 6l6 6-6 6"
+            stroke="#222" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="icon-check" style="display:none;align-items:center;justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12l5 5L19 7"
+            stroke="#fff" stroke-width="2.4"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+    <span id="sliderLabel">End day</span>
+  </div>
+
+</div><!-- /phone -->
+
 <script>
-  // ── Date ──────────────────────────────────────────────────────────
-  const days  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const now   = new Date();
-  document.getElementById('shiftDate').textContent =
-    `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
+  // ── State ─────────────────────────────────────────────────────────
+  let onDuty = true;
+  const heroImg  = document.getElementById('heroImg');
+  const dutyPill = document.getElementById('dutyPill');
+  const track    = document.getElementById('sliderTrack');
+  const fill     = document.getElementById('sliderFill');
+  const label    = document.getElementById('sliderLabel');
+  const thumb    = document.getElementById('sliderThumb');
+
+  // Slider colour palettes per state
+  const SLIDER = {
+    on: {
+      track: '#004838',
+      // Green → amber: you're moving toward "off"
+      fill:  'linear-gradient(90deg, #009966 0%, #D4690A 100%)',
+      confirm: 'confirmed-end',
+    },
+    off: {
+      track: '#1a1a1a',
+      // Dark → bright green: you're moving toward "on"
+      fill:  'linear-gradient(90deg, #2d2d2d 0%, #00B87D 100%)',
+      confirm: 'confirmed-start',
+    },
+  };
+
+  function setSliderColors(duty) {
+    const s = duty ? SLIDER.on : SLIDER.off;
+    track.style.background = s.track;
+    fill.style.background  = s.fill;
+  }
+
+  function applyDutyState(duty) {
+    onDuty = duty;
+    dutyPill.textContent = duty ? 'On Duty' : 'Off Duty';
+    dutyPill.classList.toggle('off-duty', !duty);
+    label.textContent = duty ? 'End day' : 'Start day';
+    heroImg.classList.toggle('off-duty', !duty);
+    setSliderColors(duty);
+  }
+
+  // ── Slider mechanics ──────────────────────────────────────────────
+  const THUMB_L    = 8;
+  const THUMB_R    = 318 - 48 - 8; // 262px
+  const CONFIRM_AT = THUMB_R * 0.82;
+  const TRACK_W    = 318;
+
+  let dragging   = false;
+  let dragStartX = 0;
+  let thumbBase  = THUMB_L;
+  let thumbCur   = THUMB_L;
+  let locked     = false; // block new drags during confirm animation
+
+  function getScale() {
+    const m = document.getElementById('phone').style.transform.match(/scale\(([^)]+)\)/);
+    return m ? parseFloat(m[1]) : 1;
+  }
+
+  function moveThumb(left, animated) {
+    const easePos  = 'left .25s cubic-bezier(0.4,0,0.2,1)';
+    const easeFill = 'transform .25s cubic-bezier(0.4,0,0.2,1)';
+    thumb.style.transition = animated ? easePos  : 'none';
+    fill.style.transition  = animated ? easeFill : 'none';
+
+    thumb.style.left = left + 'px';
+
+    // Fill: scaleX from transform-origin:left, spanning full track width
+    // visible portion = (left + thumb_half) / track_width
+    const sc = Math.max(0.001, (left + 24) / TRACK_W);
+    fill.style.transform = `scaleX(${sc})`;
+
+    thumbCur = left;
+    const progress = (left - THUMB_L) / (THUMB_R - THUMB_L);
+    label.style.opacity = Math.max(0, 1 - progress * 1.6);
+  }
+
+  function resetThumb(animated) {
+    moveThumb(THUMB_L, animated);
+    setTimeout(() => { label.style.opacity = '1'; }, animated ? 200 : 0);
+  }
+
+  function onStart(clientX) {
+    if (locked) return;
+    dragging   = true;
+    dragStartX = clientX;
+    thumbBase  = thumbCur;
+    thumb.classList.add('dragging');
+  }
+
+  function onMove(clientX) {
+    if (!dragging) return;
+    const dx      = (clientX - dragStartX) / getScale();
+    const newLeft = Math.max(THUMB_L, Math.min(THUMB_R, thumbBase + dx));
+    moveThumb(newLeft, false);
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    thumb.classList.remove('dragging');
+
+    if (thumbCur >= CONFIRM_AT) {
+      locked = true;
+      const confirmClass = onDuty ? SLIDER.on.confirm : SLIDER.off.confirm;
+
+      // 1. Snap thumb to end
+      moveThumb(THUMB_R, true);
+
+      setTimeout(() => {
+        // 2. Thumb colour + checkmark
+        thumb.classList.add(confirmClass);
+
+        setTimeout(() => {
+          // 3. Apply new state (pill, photo, slider colours)
+          applyDutyState(!onDuty);
+          thumb.classList.remove(confirmClass);
+          resetThumb(true);
+          locked = false;
+        }, 620);
+      }, 260);
+
+    } else {
+      resetThumb(true);
+    }
+  }
+
+  // Touch
+  thumb.addEventListener('touchstart',  e => onStart(e.touches[0].clientX), { passive:true });
+  window.addEventListener('touchmove',  e => { if (dragging) onMove(e.touches[0].clientX); }, { passive:true });
+  window.addEventListener('touchend',   () => onEnd(), { passive:true });
+  window.addEventListener('touchcancel',() => onEnd(), { passive:true });
+
+  // Mouse
+  thumb.addEventListener('mousedown',  e => { onStart(e.clientX); e.preventDefault(); });
+  window.addEventListener('mousemove', e => { if (dragging) onMove(e.clientX); });
+  window.addEventListener('mouseup',   () => onEnd());
 
   // ── Back button ───────────────────────────────────────────────────
   document.getElementById('backBtn').addEventListener('click', () => {
     window.history.length > 1 ? window.history.back() : (window.location.href = 'index.html');
   });
 
+  // ── Work rows ─────────────────────────────────────────────────────
+  document.getElementById('locationRow').addEventListener('click', () => {});
+  document.getElementById('profileRow').addEventListener('click',  () => {});
+
   // ── Scale ─────────────────────────────────────────────────────────
   (function scaleApp() {
-    const phone  = document.getElementById('phone');
-    const vv = window.visualViewport;
-    const w  = vv ? vv.width  : window.innerWidth;
-    const h  = vv ? vv.height : window.innerHeight;
-    const s  = w / 390;
+    const phone = document.getElementById('phone');
+    const vv    = window.visualViewport;
+    const w     = vv ? vv.width  : window.innerWidth;
+    const h     = vv ? vv.height : window.innerHeight;
+    const s     = w / 390;
     phone.style.transform = `scale(${s})`;
     phone.style.height    = Math.round(h / s) + 'px';
     phone.style.opacity   = '0';
