@@ -216,17 +216,16 @@
   #sliderTrack {
     position:absolute;
     left:24px; top:50%; transform:translateY(-50%);
-    width:278px; height:64px;
+    width:278px; height:64px;          /* on-duty default (narrow) */
     border-radius:100px; overflow:hidden;
-    background:#004838;           /* on-duty default */
-    transition:background .45s ease;
+    background:#004838;
+    transition:background .45s ease, width .38s cubic-bezier(0.4,0,0.2,1);
   }
 
-  /* Fill — full track width, scaleX controls reveal from left.
-     Starts at scaleX(0) so nothing is visible in default state. */
+  /* Fill — always full track width via 100%, scaleX controls reveal */
   #sliderFill {
     position:absolute; left:0; top:0; bottom:0;
-    width:278px;
+    width:100%;
     transform-origin:left center;
     transform:scaleX(0);          /* hidden at rest */
     border-radius:100px;
@@ -509,6 +508,14 @@
     label.textContent = duty ? 'End day' : 'Start day';
     heroArea.classList.toggle('off-duty', !duty);
     setSliderColors(duty);
+    // On-duty → narrow track (pause btn visible); Off-duty → full-width track
+    if (duty) {
+      track.style.width = '278px';
+      THUMB_R = 278 - 48 - 8;  // 222
+    } else {
+      track.style.width = '318px';
+      THUMB_R = 318 - 48 - 8;  // 262
+    }
     syncPauseBtn();
   }
 
@@ -523,9 +530,9 @@
   });
 
   // ── Slider mechanics ──────────────────────────────────────────────
-  const THUMB_L    = 8;
-  const THUMB_R    = 278 - 48 - 8; // 222px  (track is now 278px wide)
-  const CONFIRM_AT = THUMB_R * 0.82;
+  const THUMB_L = 8;
+  let   THUMB_R = 278 - 48 - 8;   // 222px on-duty; 262px off-duty — updated in applyDutyState
+  // CONFIRM_AT is computed live from the current THUMB_R
 
   let dragging   = false;
   let dragStartX = 0;
@@ -583,7 +590,7 @@
     dragging = false;
     thumb.classList.remove('dragging');
 
-    if (thumbCur >= CONFIRM_AT) {
+    if (thumbCur >= THUMB_R * 0.82) {
       locked = true;
       const wasOnDuty    = onDuty;
       const confirmClass = onDuty ? SLIDER.on.confirm : SLIDER.off.confirm;
